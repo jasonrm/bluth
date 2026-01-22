@@ -1,0 +1,22 @@
+[package]
+name = "bluth_macros"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Procedural macros for the bluth HTML framework"
+keywords = ["html", "macro", "proc-macro"]
+categories = ["web-programming"]
+
+[lib]
+proc-macro = true
+
+[features]
+axum = []
+
+[dependencies]
+syn = { version = "2", features = ["full"] }
+quote = "1"
+proc-macro2 = "1"
+heck = "0.5"
+proc-macro-crate = "3"
