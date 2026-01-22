@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Declarative HTML rendering"
+readme = "../../README.md"
 keywords = ["html", "web", "template"]
 categories = ["web-programming", "template-engine"]
 
