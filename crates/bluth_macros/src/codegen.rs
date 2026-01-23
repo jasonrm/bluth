@@ -13,34 +13,35 @@ pub struct SignalFieldInfo {
 }
 
 fn extract_signal_value_type(ty: &Type) -> Option<syn::Path> {
-    if let Type::Path(type_path) = ty {
-        if let Some(segment) = type_path.path.segments.last() {
-            if segment.ident == "SignalValue" {
-                if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                    if let Some(GenericArgument::Type(Type::Path(inner_path))) = args.args.first() {
-                        return Some(inner_path.path.clone());
-                    }
-                }
-            }
-        }
+    let Type::Path(type_path) = ty else {
+        return None;
+    };
+    let segment = type_path.path.segments.last()?;
+    if segment.ident != "SignalValue" {
+        return None;
     }
-    None
+    let PathArguments::AngleBracketed(args) = &segment.arguments else {
+        return None;
+    };
+    let GenericArgument::Type(Type::Path(inner_path)) = args.args.first()? else {
+        return None;
+    };
+    Some(inner_path.path.clone())
 }
 
 fn collect_signal_fields(fields: &Fields) -> HashMap<String, SignalFieldInfo> {
-    let mut result = HashMap::new();
-
-    if let Fields::Named(named) = fields {
-        for field in &named.named {
-            if let Some(field_name) = &field.ident {
-                if let Some(selector_type) = extract_signal_value_type(&field.ty) {
-                    result.insert(field_name.to_string(), SignalFieldInfo { selector_type });
-                }
-            }
-        }
-    }
-
-    result
+    let Fields::Named(named) = fields else {
+        return HashMap::new();
+    };
+    named
+        .named
+        .iter()
+        .filter_map(|field| {
+            let field_name = field.ident.as_ref()?;
+            let selector_type = extract_signal_value_type(&field.ty)?;
+            Some((field_name.to_string(), SignalFieldInfo { selector_type }))
+        })
+        .collect()
 }
 
 const VOID_ELEMENTS: &[&str] = &[
@@ -653,7 +654,8 @@ fn interpolate(template: &str, use_self: bool) -> TokenStream {
                     chars.next();
                     break;
                 }
-                field_name.push(chars.next().unwrap());
+                chars.next();
+                field_name.push(next_ch);
             }
 
             let field_ident = syn::Ident::new(&field_name, proc_macro2::Span::call_site());

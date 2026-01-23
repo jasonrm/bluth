@@ -260,8 +260,11 @@ fn is_signal_field_binding_key(key: &str) -> bool {
 }
 
 fn looks_like_field_name(ident: &Ident) -> bool {
-    let s = ident.to_string();
-    s.chars().next().map(|c| c.is_lowercase()).unwrap_or(false)
+    ident
+        .to_string()
+        .chars()
+        .next()
+        .is_some_and(char::is_lowercase)
 }
 
 impl syn::parse::Parse for AttrItem {
@@ -458,15 +461,11 @@ fn has_interpolation(s: &str) -> bool {
 }
 
 fn is_valid_identifier(s: &str) -> bool {
-    if s.is_empty() {
-        return false;
-    }
     let mut chars = s.chars();
-    let first = chars.next().unwrap();
-    if !first.is_alphabetic() && first != '_' {
+    let Some(first) = chars.next() else {
         return false;
-    }
-    chars.all(|c| c.is_alphanumeric() || c == '_')
+    };
+    (first.is_alphabetic() || first == '_') && chars.all(|c| c.is_alphanumeric() || c == '_')
 }
 
 fn classify_key(key: &str) -> AttrKey {
@@ -485,31 +484,27 @@ fn classify_value(val: &str) -> AttrValue {
     }
 }
 
+fn type_name_matches(ty: &Type, name: &str) -> bool {
+    let Type::Path(type_path) = ty else {
+        return false;
+    };
+    type_path
+        .path
+        .segments
+        .last()
+        .is_some_and(|segment| segment.ident == name)
+}
+
 pub fn is_bool_type(ty: &Type) -> bool {
-    if let Type::Path(type_path) = ty {
-        if let Some(segment) = type_path.path.segments.last() {
-            return segment.ident == "bool";
-        }
-    }
-    false
+    type_name_matches(ty, "bool")
 }
 
 pub fn is_vec_type(ty: &Type) -> bool {
-    if let Type::Path(type_path) = ty {
-        if let Some(segment) = type_path.path.segments.last() {
-            return segment.ident == "Vec";
-        }
-    }
-    false
+    type_name_matches(ty, "Vec")
 }
 
 pub fn is_option_type(ty: &Type) -> bool {
-    if let Type::Path(type_path) = ty {
-        if let Some(segment) = type_path.path.segments.last() {
-            return segment.ident == "Option";
-        }
-    }
-    false
+    type_name_matches(ty, "Option")
 }
 
 pub fn is_unit_type(ty: &Type) -> bool {

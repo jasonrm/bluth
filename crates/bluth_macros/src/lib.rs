@@ -73,14 +73,11 @@ pub fn derive_signal(input: TokenStream) -> TokenStream {
 fn derive_signal_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let name = &input.ident;
 
-    let enum_data = match &input.data {
-        Data::Enum(data) => data,
-        _ => {
-            return Err(syn::Error::new_spanned(
-                name,
-                "Signal can only be derived for enums",
-            ));
-        }
+    let Data::Enum(enum_data) = &input.data else {
+        return Err(syn::Error::new_spanned(
+            name,
+            "Signal can only be derived for enums",
+        ));
     };
 
     generate_signal_enum(name, enum_data, &input.vis)
@@ -95,17 +92,21 @@ struct VariantInfo {
 fn parse_variant(variant: &syn::Variant) -> syn::Result<VariantInfo> {
     let variant_name = variant.ident.clone();
 
-    let field_type = match &variant.fields {
-        Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
-            fields.unnamed.first().unwrap().ty.clone()
-        }
-        _ => {
-            return Err(syn::Error::new_spanned(
-                variant,
-                "Signal variants must have exactly one unnamed field",
-            ));
-        }
+    let Fields::Unnamed(fields) = &variant.fields else {
+        return Err(syn::Error::new_spanned(
+            variant,
+            "Signal variants must have exactly one unnamed field",
+        ));
     };
+
+    if fields.unnamed.len() != 1 {
+        return Err(syn::Error::new_spanned(
+            variant,
+            "Signal variants must have exactly one unnamed field",
+        ));
+    }
+
+    let field_type = fields.unnamed.first().expect("checked len above").ty.clone();
 
     let signal_name = variant
         .attrs

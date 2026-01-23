@@ -46,6 +46,26 @@ where
             elements,
         }
     }
+
+    pub fn selector(mut self, selector: impl Into<String>) -> Self {
+        self.selector = Some(selector.into());
+        self
+    }
+
+    pub fn mode(mut self, mode: PatchMode) -> Self {
+        self.mode = Some(mode);
+        self
+    }
+
+    pub fn namespace(mut self, namespace: PatchNamespace) -> Self {
+        self.namespace = Some(namespace);
+        self
+    }
+
+    pub fn use_view_transition(mut self, value: bool) -> Self {
+        self.use_view_transition = Some(value);
+        self
+    }
 }
 
 impl<T> Display for PatchElements<T>
