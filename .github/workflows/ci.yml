@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - run: cargo test --workspace
+
+  tag:
+    if: github.ref == 'refs/heads/master'
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      created: ${{ steps.check.outputs.created }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if tag exists
+        id: check
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git rev-parse "v$version" >/dev/null 2>&1; then
+            echo "Tag v$version already exists"
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Creating tag v$version"
+            git tag "v$version"
+            git push origin "v$version"
+            echo "created=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    if: needs.tag.outputs.created == 'true'
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ needs.tag.outputs.version }}" --generate-notes
+
+  publish:
+    if: needs.tag.outputs.created == 'true'
+    needs: [tag, release]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Authenticate with crates.io
+        uses: rust-lang/crates-io-auth-action@v1
+
+      - name: Publish bluth_macros
+        run: cargo publish -p bluth_macros
+
+      - name: Wait for crates.io to index
+        run: sleep 30
+
+      - name: Publish bluth
+        run: cargo publish -p bluth
