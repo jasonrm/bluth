@@ -7,8 +7,3 @@ version = "0.1.3"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/jasonrm/bluth"
-
-[workspace.metadata.release]
-tag = false
-publish = false
-allow-branch = ["*"]
