@@ -10,7 +10,7 @@ keywords = ["html", "web", "template"]
 categories = ["web-programming", "template-engine"]
 
 [dependencies]
-bluth_macros = { path = "../bluth_macros", version = "0.1.2", default-features = false }
+bluth_macros = { path = "../bluth_macros", version = "0.1.3", default-features = false }
 axum = { version = "0.8", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1", optional = true }
