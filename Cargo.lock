@@ -74,7 +74,7 @@ checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
 
 [[package]]
 name = "bluth"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "axum",
@@ -88,7 +88,7 @@ dependencies = [
 
 [[package]]
 name = "bluth_macros"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "heck",
  "proc-macro-crate",
