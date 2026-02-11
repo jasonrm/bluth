@@ -1,6 +1,6 @@
 use axum::body::Body;
 use axum::http::{StatusCode, header};
-use axum::response::{IntoResponse, Response};
+use axum::response::Response;
 use bluth::datastar::{PatchElements, PatchMode};
 use bytes::Bytes;
 use http_body_util::StreamBody;
