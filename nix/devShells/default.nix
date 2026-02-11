@@ -3,6 +3,7 @@
     devShell = {
       contents = with pkgs; [
         cargo-release
+        cargo-lambda
       ];
     };
     programs.rust = {

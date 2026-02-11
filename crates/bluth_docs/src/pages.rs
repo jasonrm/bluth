@@ -1,0 +1,129 @@
+use axum::response::Response;
+use bluth::Element;
+
+#[derive(Element)]
+#[element("main")]
+#[attr(class = "max-w-3xl mx-auto px-6 py-12")]
+struct HomePage {
+    #[element]
+    header: Header,
+    #[element]
+    intro: Intro,
+    #[element]
+    example: Example,
+}
+
+#[derive(Element)]
+#[element("header")]
+#[attr(class = "mb-8")]
+struct Header {
+    #[element]
+    title: Title,
+    #[element]
+    subtitle: Subtitle,
+}
+
+#[derive(Element)]
+#[element("h1")]
+#[attr(class = "text-4xl font-bold text-white")]
+struct Title {
+    #[element]
+    text: &'static str,
+}
+
+#[derive(Element)]
+#[element("p")]
+#[attr(class = "mt-2 text-lg text-gray-400")]
+struct Subtitle {
+    #[element]
+    text: &'static str,
+}
+
+#[derive(Element)]
+#[element("section")]
+#[attr(class = "mb-8")]
+struct Intro {
+    #[element]
+    text: IntroText,
+}
+
+#[derive(Element)]
+#[element("p")]
+#[attr(class = "text-gray-300 leading-relaxed")]
+struct IntroText {
+    #[element]
+    text: &'static str,
+}
+
+#[derive(Element)]
+#[element("section")]
+#[attr(class = "mb-8")]
+struct Example {
+    #[element]
+    heading: ExampleHeading,
+    #[element]
+    code: CodeBlock,
+}
+
+#[derive(Element)]
+#[element("h2")]
+#[attr(class = "text-2xl font-semibold text-white mb-4")]
+struct ExampleHeading {
+    #[element]
+    text: &'static str,
+}
+
+#[derive(Element)]
+#[element("pre")]
+#[attr(class = "bg-gray-900 rounded-lg p-4 overflow-x-auto")]
+struct CodeBlock {
+    #[element]
+    code: Code,
+}
+
+#[derive(Element)]
+#[element("code")]
+#[attr(class = "text-sm text-green-400")]
+struct Code {
+    #[element]
+    text: &'static str,
+}
+
+pub async fn home() -> Response {
+    let page = HomePage {
+        header: Header {
+            title: Title { text: "bluth" },
+            subtitle: Subtitle {
+                text: "Type-safe HTML components for Rust",
+            },
+        },
+        intro: Intro {
+            text: IntroText {
+                text: "bluth is a Rust library for building HTML with compile-time safe, composable components. Define your markup as structs, derive Element, and get type-checked HTML rendering with zero runtime overhead.",
+            },
+        },
+        example: Example {
+            heading: ExampleHeading {
+                text: "Quick Start",
+            },
+            code: CodeBlock {
+                code: Code {
+                    text: r#"use bluth::Element;
+
+#[derive(Element)]
+#[element("div")]
+#[attr(class = "greeting")]
+struct Hello {
+    #[element("span")]
+    who: String,
+}
+
+let hello = Hello { who: "world".into() };
+// renders: <div class="greeting"><span>world</span></div>"#,
+                },
+            },
+        },
+    };
+
+    crate::layout::page(page)
+}
