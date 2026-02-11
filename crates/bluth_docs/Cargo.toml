@@ -10,9 +10,10 @@ bluth = { path = "../bluth" }
 axum = "0.8"
 lambda_http = "0.14"
 tokio = { version = "1", features = ["macros", "time"] }
-tokio-stream = "0.1"
 async-stream = "0.3"
-futures = "0.3"
+http-body-util = "0.1"
+hyper = "1.5"
+bytes = "1"
 serde = { version = "1", features = ["derive"] }
 
 [build-dependencies]

@@ -1,10 +1,14 @@
-use axum::response::sse::{Event, KeepAlive, Sse};
+use axum::body::Body;
+use axum::http::{StatusCode, header};
+use axum::response::{IntoResponse, Response};
 use bluth::datastar::{PatchElements, PatchMode};
-use futures::stream::Stream;
+use bytes::Bytes;
+use http_body_util::StreamBody;
+use hyper::body::Frame;
 use std::convert::Infallible;
 use std::time::Duration;
 
-pub async fn sse_ticker() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+pub async fn sse_ticker() -> Response {
     let words = ["Hello", "World", "from", "Bluth"];
 
     let stream = async_stream::stream! {
@@ -21,34 +25,18 @@ pub async fn sse_ticker() -> Sse<impl Stream<Item = Result<Event, Infallible>>> 
                 .selector("#ticker-text")
                 .mode(PatchMode::Inner);
 
-            // PatchElements::to_string() generates the complete SSE event
-            let event_string = patch.to_string();
-
-            // Extract event type and data lines
-            let mut lines = event_string.lines();
-            let event_type = lines.next(); // "event: datastar-patch-elements"
-
-            // Collect all data lines
-            let data_lines: Vec<String> = lines
-                .filter_map(|line| line.strip_prefix("data: ").map(|s| s.to_string()))
-                .collect();
-
-            // Build the event with proper structure
-            let mut event = Event::default();
-            if let Some(evt) = event_type {
-                if let Some(evt_name) = evt.strip_prefix("event: ") {
-                    event = event.event(evt_name);
-                }
-            }
-
-            // Join all data lines and call data() once
-            if !data_lines.is_empty() {
-                event = event.data(data_lines.join("\n"));
-            }
-
-            yield Ok::<_, Infallible>(event);
+            let event_data = patch.to_string();
+            yield Ok::<_, Infallible>(Frame::data(Bytes::from(event_data)));
         }
     };
 
-    Sse::new(stream).keep_alive(KeepAlive::default())
+    let body = StreamBody::new(stream);
+    let body = Body::new(body);
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "text/event-stream")
+        .header(header::CACHE_CONTROL, "no-cache")
+        .body(body)
+        .unwrap()
 }

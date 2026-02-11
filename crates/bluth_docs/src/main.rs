@@ -15,5 +15,5 @@ async fn main() -> Result<(), lambda_http::Error> {
         .route("/assets/{name}", get(assets::serve))
         .route("/ticker", get(ticker::sse_ticker));
 
-    lambda_http::run(app).await
+    lambda_http::run_with_streaming_response(app).await
 }
