@@ -8,6 +8,8 @@ struct HomePage {
     #[element]
     header: Header,
     #[element]
+    ticker: TickerSection,
+    #[element]
     intro: Intro,
     #[element]
     example: Example,
@@ -36,6 +38,34 @@ struct Title {
 #[attr(class = "mt-2 text-lg text-gray-400")]
 struct Subtitle {
     #[element]
+    text: &'static str,
+}
+
+#[derive(Element)]
+#[element("section")]
+#[attr(class = "mb-8 p-6 bg-gray-900 rounded-lg")]
+struct TickerSection {
+    #[element]
+    heading: TickerHeading,
+    #[element]
+    ticker: TickerDisplay,
+}
+
+#[derive(Element)]
+#[element("h2")]
+#[attr(class = "text-xl font-semibold text-white mb-3")]
+struct TickerHeading {
+    #[element]
+    text: &'static str,
+}
+
+#[derive(Element)]
+#[element("div")]
+#[attr(class = "text-2xl font-mono text-green-400")]
+#[attr("data-init" = "@get('/ticker')")]
+struct TickerDisplay {
+    #[element("span")]
+    #[attr(id = "ticker-text")]
     text: &'static str,
 }
 
@@ -96,6 +126,10 @@ pub async fn home() -> Response {
             subtitle: Subtitle {
                 text: "Type-safe HTML components for Rust",
             },
+        },
+        ticker: TickerSection {
+            heading: TickerHeading { text: "SSE Demo" },
+            ticker: TickerDisplay { text: "" },
         },
         intro: Intro {
             text: IntroText {

@@ -1,6 +1,7 @@
 mod assets;
 mod layout;
 mod pages;
+mod ticker;
 
 use axum::Router;
 use axum::routing::get;
@@ -11,7 +12,8 @@ async fn main() -> Result<(), lambda_http::Error> {
 
     let app = Router::new()
         .route("/", get(pages::home))
-        .route("/assets/{name}", get(assets::serve));
+        .route("/assets/{name}", get(assets::serve))
+        .route("/ticker", get(ticker::sse_ticker));
 
     lambda_http::run(app).await
 }
