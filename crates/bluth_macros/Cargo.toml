@@ -12,6 +12,7 @@ categories = ["web-programming"]
 proc-macro = true
 
 [features]
+default = ["axum"]
 axum = []
 
 [dependencies]
