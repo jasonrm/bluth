@@ -428,6 +428,12 @@ impl syn::parse::Parse for FieldAttrItem {
                 return Ok(FieldAttrItem::Rename(lit.value()));
             }
         }
+        // A bare string literal (not followed by =) is a rename shorthand:
+        // #[attr("data-url")] is equivalent to #[attr(name = "data-url")]
+        if input.peek(syn::LitStr) && !input.peek2(syn::Token![=]) {
+            let lit: syn::LitStr = input.parse()?;
+            return Ok(FieldAttrItem::Rename(lit.value()));
+        }
         Ok(FieldAttrItem::Attr(input.parse()?))
     }
 }
