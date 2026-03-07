@@ -30,7 +30,8 @@ async fn signal_extractor_post_json() -> Result<(), anyhow::Error> {
         .header("Datastar-Request", "true")
         .body(Body::from(json_body))?;
 
-    let result = SignalExtractor::<SearchTerm>::from_request(request, &()).await;
+    let result: Result<SignalExtractor<SearchTerm>, _> =
+        SignalExtractor::<SearchTerm>::from_request(request, &()).await;
 
     let SignalExtractor(search_term) = result.expect("Failed to extract signal");
 
@@ -52,7 +53,8 @@ async fn signal_extractor_get_query() -> Result<(), anyhow::Error> {
         .header("Datastar-Request", "true")
         .body(Body::empty())?;
 
-    let result = SignalExtractor::<SearchTerm>::from_request(request, &()).await;
+    let result: Result<SignalExtractor<SearchTerm>, _> =
+        SignalExtractor::<SearchTerm>::from_request(request, &()).await;
 
     let SignalExtractor(search_term) = result.expect("Failed to extract signal");
 
@@ -100,7 +102,8 @@ async fn signal_extractor_missing_header() -> Result<(), anyhow::Error> {
         .header(header::CONTENT_TYPE, "application/json")
         .body(Body::from(json_body))?;
 
-    let result = SignalExtractor::<SearchTerm>::from_request(request, &()).await;
+    let result: Result<SignalExtractor<SearchTerm>, _> =
+        SignalExtractor::<SearchTerm>::from_request(request, &()).await;
 
     assert!(result.is_err());
 
@@ -120,7 +123,8 @@ async fn signal_extractor_missing_signal() -> Result<(), anyhow::Error> {
         .header("Datastar-Request", "true")
         .body(Body::from(json_body))?;
 
-    let result = SignalExtractor::<SearchTerm>::from_request(request, &()).await;
+    let result: Result<SignalExtractor<SearchTerm>, _> =
+        SignalExtractor::<SearchTerm>::from_request(request, &()).await;
 
     assert!(result.is_err());
 

@@ -1,3 +1,4 @@
+#[cfg(feature = "axum")]
 #[cfg(test)]
 pub mod axum;
 

@@ -1,4 +1,6 @@
+#[cfg(feature = "axum")]
 use axum::http::{StatusCode, header};
+#[cfg(feature = "axum")]
 use axum::response::{IntoResponse, Response};
 use std::fmt::Display;
 use std::time::Duration;
@@ -103,6 +105,7 @@ where
     }
 }
 
+#[cfg(feature = "axum")]
 impl<T> IntoResponse for PatchElements<T>
 where
     T: Display,
@@ -153,6 +156,7 @@ impl<T: SignalEnum> Display for PatchSignals<T> {
     }
 }
 
+#[cfg(feature = "axum")]
 impl<T: SignalEnum> IntoResponse for PatchSignals<T> {
     fn into_response(self) -> Response {
         (
