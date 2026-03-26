@@ -192,7 +192,7 @@ Use quoted attribute names for datastar attributes with special characters.
 | `data-style` | Dynamic styles | `"data-style" = "{ color: $textColor }"` |
 | `data-computed` | Computed expression | `"data-computed" = r#"fullName = $first + " " + $last"#` |
 | `data-ref` | Element reference | `data_ref = "myElement"` |
-| `data-init` | Initialization expression | `"data-init" = "$count = 0"` |
+| `data-init` | Run expression on load (page load, DOM patch, attr change) | `"data-init" = "@get('/api/data')"` |
 | `data-effect` | Side effects | `"data-effect" = "console.log($value)"` |
 | `data-indicator` | Loading indicator | `data_indicator = "loading"` |
 | `data-ignore` | Skip processing | `data_ignore` |
@@ -232,6 +232,20 @@ Use `@` prefix for server actions:
 - `@put('/path')` - PUT request
 - `@patch('/path')` - PATCH request
 - `@delete('/path')` - DELETE request
+
+### Loading Data on Page Load
+
+Use `data-init` with a server action to fetch data when the element first appears:
+
+```rust
+#[derive(Element)]
+#[element("div")]
+#[attr("data-init" = "@get('/api/data')")]
+struct DataContainer {
+    #[element]
+    body: TableBody,
+}
+```
 
 ## Dynamic Classes (CVA Pattern)
 
