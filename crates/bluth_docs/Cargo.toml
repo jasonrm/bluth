@@ -6,7 +6,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
-bluth = { path = "../bluth" }
+bluth = { path = "../bluth", features = ["axum"] }
 axum = "0.8"
 lambda_http = "0.14"
 tokio = { version = "1", features = ["macros", "time"] }

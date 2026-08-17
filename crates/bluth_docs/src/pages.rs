@@ -128,7 +128,7 @@ impl HomePage {
             header: Header {
                 title: Title { text: "bluth" },
                 subtitle: Subtitle {
-                    text: "Type-safe HTML components for Rust",
+                    text: "Typed HTML for Rust — structs, not templates",
                 },
             },
             ticker: TickerSection {
@@ -137,7 +137,7 @@ impl HomePage {
             },
             intro: Intro {
                 text: IntroText {
-                    text: "bluth is a Rust library for building HTML with compile-time safe, composable components. Define your markup as structs, derive Element, and get type-checked HTML rendering with zero runtime overhead.",
+                    text: "Bluth is typed HTML, not a template engine. Markup is ordinary Rust structs that derive Element: the type is the component, fields are children or text, and the HTML is Display of those values. A page is a struct literal. Public fields are the composition API.",
                 },
             },
             example: Example {
@@ -146,18 +146,24 @@ impl HomePage {
                 },
                 code: CodeBlock {
                     code: Code {
-                        text: r#"use bluth::Element;
+                        text: r##"use bluth::datastar::{PatchElements, PatchMode};
+use bluth::Element;
 
 #[derive(Element)]
-#[element("div")]
-#[attr(class = "greeting")]
-struct Hello {
-    #[element("span")]
-    who: String,
+#[element("span")]
+#[attr(id = "ticker-text")]
+struct TickerText {
+    #[element]
+    text: String,
 }
 
-let hello = Hello { who: "world".into() };
-// renders: <div class="greeting"><span>world</span></div>"#,
+let patch = PatchElements {
+    selector: Some("#ticker-text".into()),
+    mode: PatchMode::Inner,
+    ..PatchElements::new(vec![TickerText {
+        text: "Hello World from Bluth".into(),
+    }])
+};"##,
                     },
                 },
             },

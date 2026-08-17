@@ -126,7 +126,7 @@ fn main() {
     let mut files = vec![File {
         name: "datastar".to_string(),
         source: AssetSource::Url(
-            "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.7/bundles/datastar.js"
+            "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.2/bundles/datastar.js"
                 .to_string(),
         ),
         ext: "js".to_string(),
