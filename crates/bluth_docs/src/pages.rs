@@ -1,5 +1,6 @@
 use crate::assets::Asset;
 use crate::layout::HtmlResponse;
+use crate::search::SearchSection;
 use bluth::{Body, Document, Element, Head, Html, Link, Script};
 
 #[derive(Element)]
@@ -10,6 +11,8 @@ struct HomePage {
     header: Header,
     #[element]
     ticker: TickerSection,
+    #[element]
+    search: SearchSection,
     #[element]
     intro: Intro,
     #[element]
@@ -135,6 +138,7 @@ impl HomePage {
                 heading: TickerHeading { text: "SSE Demo" },
                 ticker: TickerDisplay { text: "" },
             },
+            search: SearchSection::new(),
             intro: Intro {
                 text: IntroText {
                     text: "Bluth is typed HTML, not a template engine. Markup is ordinary Rust structs that derive Element: the type is the component, fields are children or text, and the HTML is Display of those values. A page is a struct literal. Public fields are the composition API.",

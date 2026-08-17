@@ -15,6 +15,7 @@ http-body-util = "0.1"
 hyper = "1.5"
 bytes = "1"
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [build-dependencies]
 encre-css = "0.20"
