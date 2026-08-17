@@ -2,7 +2,7 @@
 use axum::http::{StatusCode, header};
 #[cfg(feature = "axum")]
 use axum::response::{IntoResponse, Response};
-use std::fmt::Display;
+use std::fmt::{Display, Write};
 use std::time::Duration;
 use strum::AsRefStr;
 
@@ -74,9 +74,13 @@ where
         }
 
         for element in &self.elements {
-            for line in element.to_string().lines() {
-                writeln!(f, "data: elements {}", line)?;
-            }
+            let mut lines = ElementLineWriter {
+                f,
+                line_open: false,
+                pending_cr: false,
+            };
+            write!(lines, "{}", element)?;
+            lines.finish()?;
         }
 
         writeln!(f)?;
@@ -159,16 +163,73 @@ impl DatastarInterval {
     }
 }
 
+struct ElementLineWriter<'a, 'b> {
+    f: &'a mut std::fmt::Formatter<'b>,
+    line_open: bool,
+    pending_cr: bool,
+}
+
+impl ElementLineWriter<'_, '_> {
+    fn write_visible(&mut self, ch: char) -> std::fmt::Result {
+        if !self.line_open {
+            write!(self.f, "data: elements ")?;
+            self.line_open = true;
+        }
+        self.f.write_char(ch)
+    }
+
+    fn end_line(&mut self) -> std::fmt::Result {
+        if !self.line_open {
+            write!(self.f, "data: elements ")?;
+        }
+        writeln!(self.f)?;
+        self.line_open = false;
+        Ok(())
+    }
+
+    fn finish(mut self) -> std::fmt::Result {
+        if self.pending_cr {
+            self.write_visible('\r')?;
+        }
+        if self.line_open {
+            writeln!(self.f)?;
+        }
+        Ok(())
+    }
+}
+
+impl Write for ElementLineWriter<'_, '_> {
+    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+        for ch in s.chars() {
+            if self.pending_cr {
+                self.pending_cr = false;
+                if ch == '\n' {
+                    self.end_line()?;
+                    continue;
+                }
+                self.write_visible('\r')?;
+            }
+            if ch == '\n' {
+                self.end_line()?;
+            } else if ch == '\r' {
+                self.pending_cr = true;
+            } else {
+                self.write_visible(ch)?;
+            }
+        }
+        Ok(())
+    }
+}
+
 impl Display for DatastarInterval {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ms = self.duration.as_millis();
-        let duration_str = if ms >= 1000 && ms % 1000 == 0 {
-            format!("{}s", ms / 1000)
+        write!(f, "data-on-interval__duration.")?;
+        if ms >= 1000 && ms % 1000 == 0 {
+            write!(f, "{}s", ms / 1000)?;
         } else {
-            format!("{}ms", ms)
-        };
-
-        write!(f, "data-on-interval__duration.{}", duration_str)?;
+            write!(f, "{}ms", ms)?;
+        }
         if self.leading {
             write!(f, ".leading")?;
         }
@@ -193,6 +254,15 @@ mod tests {
         assert!(!sse.contains("data: mode"));
         assert!(!sse.contains("data: useViewTransition"));
         assert!(!sse.contains("data: selector"));
+    }
+
+    #[test]
+    fn patch_elements_splits_multiline_display() {
+        let patch = PatchElements::new(vec!["<div>\n<span>hi</span>\n</div>"]);
+        let sse = patch.to_string();
+        assert!(sse.contains("data: elements <div>\n"));
+        assert!(sse.contains("data: elements <span>hi</span>\n"));
+        assert!(sse.contains("data: elements </div>\n"));
     }
 
     #[test]

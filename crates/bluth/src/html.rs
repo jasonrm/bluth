@@ -2,19 +2,28 @@ use std::fmt::{self, Display, Write};
 
 pub struct EscapedAttr<T>(pub T);
 
-impl<T: Display> Display for EscapedAttr<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let value = self.0.to_string();
-        for ch in value.chars() {
+struct EscapingWriter<'a, 'b> {
+    f: &'a mut fmt::Formatter<'b>,
+}
+
+impl Write for EscapingWriter<'_, '_> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        for ch in s.chars() {
             match ch {
-                '"' => f.write_str("&quot;")?,
-                '&' => f.write_str("&amp;")?,
-                '<' => f.write_str("&lt;")?,
-                '>' => f.write_str("&gt;")?,
-                _ => f.write_char(ch)?,
+                '"' => self.f.write_str("&quot;")?,
+                '&' => self.f.write_str("&amp;")?,
+                '<' => self.f.write_str("&lt;")?,
+                '>' => self.f.write_str("&gt;")?,
+                _ => self.f.write_char(ch)?,
             }
         }
         Ok(())
+    }
+}
+
+impl<T: Display> Display for EscapedAttr<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(EscapingWriter { f }, "{}", self.0)
     }
 }
 

@@ -687,6 +687,6 @@ fn interpolate(template: &str, use_self: bool) -> TokenStream {
     if value_parts.is_empty() {
         quote! { #format_string }
     } else {
-        quote! { format!(#format_string, #(#value_parts),*) }
+        quote! { ::core::format_args!(#format_string, #(#value_parts),*) }
     }
 }

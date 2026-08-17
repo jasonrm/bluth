@@ -40,12 +40,6 @@ impl<S: SignalSelector> std::ops::Deref for SignalValue<S> {
     }
 }
 
-impl<S: SignalSelector> std::ops::DerefMut for SignalValue<S> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
 impl<S: SignalSelector> Clone for SignalValue<S>
 where
     S::Value: Clone,
