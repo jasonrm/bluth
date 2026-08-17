@@ -6,8 +6,8 @@ license.workspace = true
 repository.workspace = true
 description = "Declarative HTML rendering"
 readme = "../../README.md"
-keywords = ["html", "web", "template"]
-categories = ["web-programming", "template-engine"]
+keywords = ["html", "web"]
+categories = ["web-programming"]
 
 [dependencies]
 bluth_macros = { path = "../bluth_macros", version = "0.1.3", default-features = false }

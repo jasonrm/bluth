@@ -471,12 +471,12 @@ fn wrap_with_tag(
             } else if is_option_type(field_type) {
                 quote! {
                     if let Some(ref v) = self.#field_name {
-                        write!(f, " {}=\"{}\"", #attr_name, #bluth_crate::html::escape_attr(v))?;
+                        write!(f, " {}=\"{}\"", #attr_name, #bluth_crate::html::EscapedAttr(v))?;
                     }
                 }
             } else {
                 quote! {
-                    write!(f, " {}=\"{}\"", #attr_name, #bluth_crate::html::escape_attr(&self.#field_name))?;
+                    write!(f, " {}=\"{}\"", #attr_name, #bluth_crate::html::EscapedAttr(&self.#field_name))?;
                 }
             }
         })
@@ -555,7 +555,7 @@ fn emit_single_attr(
         AttrValue::Interpolated(v) => {
             let val_expr = interpolate(v, use_self);
             quote! {
-                write!(f, " {}=\"{}\"", #key_expr, #bluth_crate::html::escape_attr(#val_expr))?;
+                write!(f, " {}=\"{}\"", #key_expr, #bluth_crate::html::EscapedAttr(#val_expr))?;
             }
         }
         AttrValue::Bool(true) => {
@@ -568,7 +568,7 @@ fn emit_single_attr(
         }
         AttrValue::Path(path) => {
             quote! {
-                write!(f, " {}=\"{}\"", #key_expr, #bluth_crate::html::escape_attr(<#path as ::core::convert::AsRef<str>>::as_ref(&#path)))?;
+                write!(f, " {}=\"{}\"", #key_expr, #bluth_crate::html::EscapedAttr(<#path as ::core::convert::AsRef<str>>::as_ref(&#path)))?;
             }
         }
         AttrValue::SignalFieldBinding(field_ident) => {
@@ -591,7 +591,7 @@ fn emit_single_attr(
         }
         AttrValue::Expr(expr) => {
             quote! {
-                write!(f, " {}=\"{}\"", #key_expr, #bluth_crate::html::escape_attr(#expr))?;
+                write!(f, " {}=\"{}\"", #key_expr, #bluth_crate::html::EscapedAttr(#expr))?;
             }
         }
     }

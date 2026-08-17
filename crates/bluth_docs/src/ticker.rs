@@ -1,12 +1,19 @@
 use axum::body::Body;
 use axum::http::{StatusCode, header};
 use axum::response::Response;
+use bluth::Element;
 use bluth::datastar::{PatchElements, PatchMode};
 use bytes::Bytes;
 use http_body_util::StreamBody;
 use hyper::body::Frame;
 use std::convert::Infallible;
 use std::time::Duration;
+
+#[derive(Element)]
+struct TickerText {
+    #[element]
+    text: String,
+}
 
 pub async fn sse_ticker() -> Response {
     let words = ["Hello", "World", "from", "Bluth"];
@@ -24,7 +31,9 @@ pub async fn sse_ticker() -> Response {
             let patch = PatchElements {
                 selector: Some("#ticker-text".into()),
                 mode: PatchMode::Inner,
-                ..PatchElements::new(vec![accumulated.clone()])
+                ..PatchElements::new(vec![TickerText {
+                    text: accumulated.clone(),
+                }])
             };
 
             let event_data = patch.to_string();

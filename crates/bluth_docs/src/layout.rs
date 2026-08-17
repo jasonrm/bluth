@@ -22,13 +22,13 @@ pub fn head() -> Head {
     }
 }
 
-pub fn page(content: impl Display) -> Response {
+pub fn page<T: Display>(content: T) -> Response {
     let html = Html {
         lang: "en",
         head: head(),
         body: Body {
             class: "bg-gray-950 text-gray-100 min-h-screen",
-            children: vec![content.to_string()],
+            children: vec![content],
         },
     };
 
