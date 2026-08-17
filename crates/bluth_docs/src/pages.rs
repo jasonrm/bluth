@@ -1,12 +1,14 @@
 use crate::assets::Asset;
-use crate::layout::HtmlResponse;
+use crate::layout::{HtmlResponse, Nav};
 use crate::search::SearchSection;
-use bluth::{Body, Document, Element, Head, Html, Link, Script};
+use bluth::Element;
 
 #[derive(Element)]
 #[element("main")]
 #[attr(class = "max-w-3xl mx-auto px-6 py-12")]
 struct HomePage {
+    #[element]
+    nav: Nav,
     #[element]
     header: Header,
     #[element]
@@ -128,6 +130,7 @@ pub struct Home;
 impl HomePage {
     pub fn new() -> Self {
         Self {
+            nav: Nav::site(),
             header: Header {
                 title: Title { text: "bluth" },
                 subtitle: Subtitle {
@@ -174,25 +177,8 @@ let patch = PatchElements {
         }
     }
 
-    pub fn document(self, datastar: Asset, styles: Asset) -> Document<Self> {
-        Document::new(Html {
-            lang: "en",
-            head: Head {
-                link: vec![Link {
-                    id: Some("stylesheet"),
-                    href: styles.url,
-                }],
-                script: vec![Script {
-                    src: datastar.url,
-                    async_: false,
-                    type_: "module",
-                }],
-            },
-            body: Body {
-                class: "bg-gray-950 text-gray-100 min-h-screen",
-                children: vec![self],
-            },
-        })
+    pub fn document(self, datastar: Asset, styles: Asset) -> bluth::Document<Self> {
+        crate::layout::document(self, datastar, styles)
     }
 }
 

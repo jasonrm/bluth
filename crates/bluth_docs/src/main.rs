@@ -1,4 +1,5 @@
 mod assets;
+mod catalog;
 mod error;
 mod layout;
 mod pages;
@@ -6,6 +7,7 @@ mod search;
 mod ticker;
 
 use crate::assets::Asset;
+use crate::catalog::Catalog;
 use crate::error::Error;
 use crate::pages::Home;
 use crate::search::Search;
@@ -16,6 +18,8 @@ use axum::routing::{get, post};
 async fn run() -> Result<(), Error> {
     let app = Router::new()
         .route("/", get(Home::get))
+        .route("/catalog", get(Catalog::get))
+        .route("/catalog/tick", get(Catalog::tick))
         .route("/search", post(Search::post))
         .route("/assets/{name}", get(Asset::get))
         .route("/ticker", get(Ticker::stream));
