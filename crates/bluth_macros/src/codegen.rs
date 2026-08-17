@@ -577,7 +577,7 @@ fn emit_single_attr(
                 let selector_type = &signal_info.selector_type;
                 quote! {
                     let _ = &self.#field_ident;
-                    write!(f, " {}=\"{}\"", #key_expr, <#selector_type as #bluth_crate::SignalSelector>::NAME)?;
+                    write!(f, " {}=\"{}\"", #key_expr, <#selector_type as #bluth_crate::SignalName>::NAME)?;
                 }
             } else {
                 let err_msg = format!(

@@ -15,39 +15,43 @@ struct TickerText {
     text: String,
 }
 
-pub async fn sse_ticker() -> Response {
-    let words = ["Hello", "World", "from", "Bluth"];
+pub struct Ticker;
 
-    let stream = async_stream::stream! {
-        let mut accumulated = String::new();
+impl Ticker {
+    pub async fn stream() -> Response {
+        let words = ["Hello", "World", "from", "Bluth"];
 
-        for (index, word) in words.into_iter().enumerate() {
-            if index > 0 {
-                tokio::time::sleep(Duration::from_secs(1)).await;
-                accumulated.push(' ');
+        let stream = async_stream::stream! {
+            let mut text = String::new();
+
+            for (index, word) in words.into_iter().enumerate() {
+                if index > 0 {
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    text.push(' ');
+                }
+                text.push_str(word);
+
+                let patch = PatchElements {
+                    selector: Some("#ticker-text".into()),
+                    mode: PatchMode::Inner,
+                    ..PatchElements::new(vec![TickerText {
+                        text: text.clone(),
+                    }])
+                };
+
+                let bytes = Bytes::from(patch.to_string());
+                yield Ok::<_, Infallible>(Frame::data(bytes));
             }
-            accumulated.push_str(word);
+        };
 
-            let patch = PatchElements {
-                selector: Some("#ticker-text".into()),
-                mode: PatchMode::Inner,
-                ..PatchElements::new(vec![TickerText {
-                    text: accumulated.clone(),
-                }])
-            };
+        let body = StreamBody::new(stream);
+        let body = Body::new(body);
 
-            let event_data = patch.to_string();
-            yield Ok::<_, Infallible>(Frame::data(Bytes::from(event_data)));
-        }
-    };
-
-    let body = StreamBody::new(stream);
-    let body = Body::new(body);
-
-    Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "text/event-stream")
-        .header(header::CACHE_CONTROL, "no-cache")
-        .body(body)
-        .unwrap()
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "text/event-stream")
+            .header(header::CACHE_CONTROL, "no-cache")
+            .body(body)
+            .unwrap()
+    }
 }

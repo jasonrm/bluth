@@ -1,4 +1,4 @@
-use crate::{Signal, SignalExtractor, SignalSelector, Signals};
+use crate::{Signal, SignalMap, SignalName};
 use axum::{
     extract::FromRequest,
     http::{StatusCode, header},
@@ -30,10 +30,10 @@ async fn signal_extractor_post_json() -> Result<(), anyhow::Error> {
         .header("Datastar-Request", "true")
         .body(Body::from(json_body))?;
 
-    let result: Result<SignalExtractor<SearchTerm>, _> =
-        SignalExtractor::<SearchTerm>::from_request(request, &()).await;
+    let result: Result<Signal<SearchTerm>, _> =
+        Signal::<SearchTerm>::from_request(request, &()).await;
 
-    let SignalExtractor(search_term) = result.expect("Failed to extract signal");
+    let Signal(search_term) = result.expect("Failed to extract signal");
 
     assert_eq!(search_term, "test query");
     assert_eq!(SearchTerm::NAME, "searchTerm");
@@ -53,10 +53,10 @@ async fn signal_extractor_get_query() -> Result<(), anyhow::Error> {
         .header("Datastar-Request", "true")
         .body(Body::empty())?;
 
-    let result: Result<SignalExtractor<SearchTerm>, _> =
-        SignalExtractor::<SearchTerm>::from_request(request, &()).await;
+    let result: Result<Signal<SearchTerm>, _> =
+        Signal::<SearchTerm>::from_request(request, &()).await;
 
-    let SignalExtractor(search_term) = result.expect("Failed to extract signal");
+    let Signal(search_term) = result.expect("Failed to extract signal");
 
     assert_eq!(search_term, "test query");
 
@@ -76,14 +76,15 @@ async fn signal_extractor_multiple_signals() -> Result<(), anyhow::Error> {
         .header("Datastar-Request", "true")
         .body(Body::from(json_body))?;
 
-    let result: Result<Signals<(SignalExtractor<UserName>, SignalExtractor<UserEmail>)>, _> =
-        Signals::from_request(request, &()).await;
+    let result: Result<SignalMap, _> = SignalMap::from_request(request, &()).await;
 
-    let Signals((SignalExtractor(user_name), SignalExtractor(user_email))) =
-        result.expect("Failed to extract signals");
+    let map = result.expect("Failed to extract signals");
 
-    assert_eq!(user_name, "John Doe");
-    assert_eq!(user_email, "john@example.com");
+    assert_eq!(map.signal::<UserName>().expect("userName"), "John Doe");
+    assert_eq!(
+        map.signal::<UserEmail>().expect("userEmail"),
+        "john@example.com"
+    );
     assert_eq!(UserName::NAME, "userName");
     assert_eq!(UserEmail::NAME, "userEmail");
 
@@ -102,8 +103,8 @@ async fn signal_extractor_missing_header() -> Result<(), anyhow::Error> {
         .header(header::CONTENT_TYPE, "application/json")
         .body(Body::from(json_body))?;
 
-    let result: Result<SignalExtractor<SearchTerm>, _> =
-        SignalExtractor::<SearchTerm>::from_request(request, &()).await;
+    let result: Result<Signal<SearchTerm>, _> =
+        Signal::<SearchTerm>::from_request(request, &()).await;
 
     assert!(result.is_err());
 
@@ -123,8 +124,8 @@ async fn signal_extractor_missing_signal() -> Result<(), anyhow::Error> {
         .header("Datastar-Request", "true")
         .body(Body::from(json_body))?;
 
-    let result: Result<SignalExtractor<SearchTerm>, _> =
-        SignalExtractor::<SearchTerm>::from_request(request, &()).await;
+    let result: Result<Signal<SearchTerm>, _> =
+        Signal::<SearchTerm>::from_request(request, &()).await;
 
     assert!(result.is_err());
 

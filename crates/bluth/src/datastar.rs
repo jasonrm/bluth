@@ -126,8 +126,8 @@ impl<T: SignalEnum> Display for PatchSignals<T> {
             writeln!(f, "data: onlyIfMissing {}", self.only_if_missing)?;
         }
 
-        let merged = crate::signal::merge_signals(&self.signals);
-        writeln!(f, "data: signals {}", merged)?;
+        let map = crate::signal::SignalMap::merge(&self.signals);
+        writeln!(f, "data: signals {}", map)?;
 
         writeln!(f)?;
 
@@ -147,13 +147,13 @@ impl<T: SignalEnum> IntoResponse for PatchSignals<T> {
     }
 }
 
-pub struct DatastarInterval {
+pub struct OnInterval {
     pub duration: Duration,
     pub leading: bool,
     pub view_transition: bool,
 }
 
-impl DatastarInterval {
+impl OnInterval {
     pub fn new(duration: Duration) -> Self {
         Self {
             duration,
@@ -221,7 +221,7 @@ impl Write for ElementLineWriter<'_, '_> {
     }
 }
 
-impl Display for DatastarInterval {
+impl Display for OnInterval {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ms = self.duration.as_millis();
         write!(f, "data-on-interval__duration.")?;
@@ -311,7 +311,7 @@ mod tests {
 
     #[test]
     fn test_datastar_interval_seconds() {
-        let interval = DatastarInterval {
+        let interval = OnInterval {
             duration: Duration::from_secs(1),
             leading: false,
             view_transition: false,
@@ -321,7 +321,7 @@ mod tests {
 
     #[test]
     fn test_datastar_interval_milliseconds() {
-        let interval = DatastarInterval {
+        let interval = OnInterval {
             duration: Duration::from_millis(500),
             leading: false,
             view_transition: false,
@@ -331,7 +331,7 @@ mod tests {
 
     #[test]
     fn test_datastar_interval_minutes() {
-        let interval = DatastarInterval {
+        let interval = OnInterval {
             duration: Duration::from_secs(120),
             leading: false,
             view_transition: false,
@@ -341,7 +341,7 @@ mod tests {
 
     #[test]
     fn test_datastar_interval_with_leading() {
-        let interval = DatastarInterval {
+        let interval = OnInterval {
             duration: Duration::from_secs(1),
             leading: true,
             view_transition: false,
@@ -354,7 +354,7 @@ mod tests {
 
     #[test]
     fn test_datastar_interval_with_viewtransition() {
-        let interval = DatastarInterval {
+        let interval = OnInterval {
             duration: Duration::from_millis(500),
             leading: false,
             view_transition: true,
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn test_datastar_interval_with_all_modifiers() {
-        let interval = DatastarInterval {
+        let interval = OnInterval {
             duration: Duration::from_secs(2),
             leading: true,
             view_transition: true,
@@ -380,7 +380,7 @@ mod tests {
 
     #[test]
     fn test_datastar_interval_mixed_units() {
-        let interval = DatastarInterval {
+        let interval = OnInterval {
             duration: Duration::from_millis(1500),
             leading: false,
             view_transition: false,

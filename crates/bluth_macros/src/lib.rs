@@ -10,7 +10,7 @@ mod codegen;
 use attributes::ElementSpec;
 use codegen::{generate_enum_render, generate_struct_render};
 
-fn get_bluth_crate() -> proc_macro2::TokenStream {
+fn bluth_crate() -> proc_macro2::TokenStream {
     match crate_name("bluth") {
         Ok(FoundCrate::Itself) => quote!(crate),
         Ok(FoundCrate::Name(name)) => {
@@ -34,7 +34,7 @@ pub fn derive_element(input: TokenStream) -> TokenStream {
 fn derive_element_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let name = &input.ident;
     let spec = ElementSpec::from_attrs(&input.attrs)?;
-    let bluth_crate = get_bluth_crate();
+    let bluth_crate = bluth_crate();
 
     let render_body = match &input.data {
         Data::Struct(data) => generate_struct_render(data, &spec, &bluth_crate)?,
@@ -143,7 +143,7 @@ fn generate_signal_enum(
     data: &DataEnum,
     vis: &syn::Visibility,
 ) -> syn::Result<proc_macro2::TokenStream> {
-    let bluth = get_bluth_crate();
+    let bluth = bluth_crate();
 
     let variants: Vec<VariantInfo> = data
         .variants
@@ -170,34 +170,34 @@ fn generate_signal_enum(
             let field_type = &v.field_type;
 
             quote! {
-                impl #bluth::SignalSelector for #selector_name {
+                impl #bluth::SignalName for #selector_name {
                     type Value = #field_type;
                     type Enum = #enum_name;
 
                     const NAME: &'static str = #signal_name;
 
-                    fn extract(value: &#enum_name) -> ::core::option::Option<&Self::Value> {
-                        match value {
+                    fn value(signal: &#enum_name) -> ::core::option::Option<&Self::Value> {
+                        match signal {
                             #enum_name::#selector_name(v) => ::core::option::Option::Some(v),
                             _ => ::core::option::Option::None,
                         }
                     }
 
-                    fn into_inner(value: #enum_name) -> ::core::option::Option<Self::Value> {
-                        match value {
+                    fn owned(signal: #enum_name) -> ::core::option::Option<Self::Value> {
+                        match signal {
                             #enum_name::#selector_name(v) => ::core::option::Option::Some(v),
                             _ => ::core::option::Option::None,
                         }
                     }
 
-                    fn wrap(value: Self::Value) -> #enum_name {
+                    fn from_value(value: Self::Value) -> #enum_name {
                         #enum_name::#selector_name(value)
                     }
                 }
 
                 impl ::core::convert::AsRef<str> for #selector_name {
                     fn as_ref(&self) -> &str {
-                        <#selector_name as #bluth::SignalSelector>::NAME
+                        <#selector_name as #bluth::SignalName>::NAME
                     }
                 }
             }
@@ -238,13 +238,13 @@ fn generate_signal_enum(
 
     let signal_enum_impl = quote! {
         impl #bluth::SignalEnum for #enum_name {
-            fn signal_name(&self) -> &'static str {
+            fn name(&self) -> &'static str {
                 match self {
                     #(#signal_name_arms)*
                 }
             }
 
-            fn to_json_value(&self) -> ::serde_json::Value {
+            fn json(&self) -> ::serde_json::Value {
                 match self {
                     #(#to_json_arms)*
                 }

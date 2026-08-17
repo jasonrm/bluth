@@ -1,38 +1,32 @@
-use std::collections::HashMap;
-
 pub trait SignalEnum: Sized + serde::Serialize {
-    fn signal_name(&self) -> &'static str;
-    fn to_json_value(&self) -> serde_json::Value;
+    fn name(&self) -> &'static str;
+    fn json(&self) -> serde_json::Value;
 }
 
-pub trait SignalSelector: Sized {
+pub trait SignalName: Sized {
     type Value: for<'de> serde::Deserialize<'de>;
     type Enum: SignalEnum;
 
     const NAME: &'static str;
 
-    fn extract(value: &Self::Enum) -> Option<&Self::Value>;
-    fn into_inner(value: Self::Enum) -> Option<Self::Value>;
-    fn wrap(value: Self::Value) -> Self::Enum;
+    fn value(signal: &Self::Enum) -> Option<&Self::Value>;
+    fn owned(signal: Self::Enum) -> Option<Self::Value>;
+    fn from_value(value: Self::Value) -> Self::Enum;
 }
 
-pub struct SignalValue<S: SignalSelector>(pub S::Value);
+pub struct SignalValue<S: SignalName>(pub S::Value);
 
-impl<S: SignalSelector> SignalValue<S> {
+impl<S: SignalName> SignalValue<S> {
     pub fn new(value: S::Value) -> Self {
         Self(value)
     }
 
-    pub fn into_inner(self) -> S::Value {
-        self.0
-    }
-
-    pub fn into_enum(self) -> S::Enum {
-        S::wrap(self.0)
+    pub fn signal(self) -> S::Enum {
+        S::from_value(self.0)
     }
 }
 
-impl<S: SignalSelector> std::ops::Deref for SignalValue<S> {
+impl<S: SignalName> std::ops::Deref for SignalValue<S> {
     type Target = S::Value;
 
     fn deref(&self) -> &Self::Target {
@@ -40,7 +34,7 @@ impl<S: SignalSelector> std::ops::Deref for SignalValue<S> {
     }
 }
 
-impl<S: SignalSelector> Clone for SignalValue<S>
+impl<S: SignalName> Clone for SignalValue<S>
 where
     S::Value: Clone,
 {
@@ -49,7 +43,7 @@ where
     }
 }
 
-impl<S: SignalSelector> std::fmt::Debug for SignalValue<S>
+impl<S: SignalName> std::fmt::Debug for SignalValue<S>
 where
     S::Value: std::fmt::Debug,
 {
@@ -58,26 +52,26 @@ where
     }
 }
 
-pub trait OptDisplay {
-    fn opt_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
+pub trait OptionalDisplay {
+    fn optional(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
 }
 
-impl<T: std::fmt::Display> OptDisplay for Option<T> {
-    fn opt_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<T: std::fmt::Display> OptionalDisplay for Option<T> {
+    fn optional(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(v) = self { v.fmt(f) } else { Ok(()) }
     }
 }
 
-impl<S: SignalSelector> std::fmt::Display for SignalValue<S>
+impl<S: SignalName> std::fmt::Display for SignalValue<S>
 where
-    S::Value: OptDisplay,
+    S::Value: OptionalDisplay,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.opt_fmt(f)
+        self.0.optional(f)
     }
 }
 
-impl<S: SignalSelector> PartialEq for SignalValue<S>
+impl<S: SignalName> PartialEq for SignalValue<S>
 where
     S::Value: PartialEq,
 {
@@ -86,20 +80,24 @@ where
     }
 }
 
-impl<S: SignalSelector> Eq for SignalValue<S> where S::Value: Eq {}
+impl<S: SignalName> Eq for SignalValue<S> where S::Value: Eq {}
 
-pub fn merge_signals<T: SignalEnum>(signals: &[T]) -> serde_json::Value {
-    let mut map = serde_json::Map::new();
-    for signal in signals {
-        map.insert(signal.signal_name().to_string(), signal.to_json_value());
-    }
-    serde_json::Value::Object(map)
+pub struct SignalMap {
+    pub values: serde_json::Map<String, serde_json::Value>,
 }
 
-pub fn signals_from_map<S: SignalSelector>(
-    signals: &HashMap<String, serde_json::Value>,
-) -> Option<S::Value> {
-    signals
-        .get(S::NAME)
-        .and_then(|v| serde_json::from_value(v.clone()).ok())
+impl SignalMap {
+    pub fn merge<T: SignalEnum>(signals: &[T]) -> Self {
+        let mut values = serde_json::Map::new();
+        for signal in signals {
+            values.insert(signal.name().to_string(), signal.json());
+        }
+        Self { values }
+    }
+}
+
+impl std::fmt::Display for SignalMap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", serde_json::Value::Object(self.values.clone()))
+    }
 }

@@ -37,12 +37,12 @@ pub mod html;
 pub mod signal;
 
 #[cfg(feature = "axum")]
-pub mod extractor;
+pub mod request;
 
-pub use signal::{OptDisplay, SignalEnum, SignalSelector, SignalValue};
+pub use signal::{OptionalDisplay, SignalEnum, SignalMap, SignalName, SignalValue};
 
 #[cfg(feature = "axum")]
-pub use extractor::{Signal as SignalExtractor, Signals};
+pub use request::Signal;
 
 #[derive(Element)]
 pub struct Document<T>

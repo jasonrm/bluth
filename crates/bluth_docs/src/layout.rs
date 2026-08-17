@@ -1,38 +1,12 @@
-use crate::assets::asset_url;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use bluth::{Body, Document, Head, Html, Link, Script};
+use bluth::Document;
 use std::fmt::Display;
 
-pub fn head() -> Head {
-    let script = Script {
-        src: asset_url("datastar").unwrap(),
-        async_: false,
-        type_: "module",
-    };
+pub struct HtmlResponse<T: Display>(pub Document<T>);
 
-    let style = Link {
-        id: Some("stylesheet"),
-        href: asset_url("styles").unwrap(),
-    };
-
-    Head {
-        link: vec![style],
-        script: vec![script],
+impl<T: Display> IntoResponse for HtmlResponse<T> {
+    fn into_response(self) -> Response {
+        (StatusCode::OK, axum::response::Html(self.0.to_string())).into_response()
     }
-}
-
-pub fn page<T: Display>(content: T) -> Response {
-    let html = Html {
-        lang: "en",
-        head: head(),
-        body: Body {
-            class: "bg-gray-950 text-gray-100 min-h-screen",
-            children: vec![content],
-        },
-    };
-
-    let document = Document::new(html);
-
-    (StatusCode::OK, axum::response::Html(document.to_string())).into_response()
 }

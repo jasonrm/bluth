@@ -1,4 +1,4 @@
-use crate::{Element, Signal, SignalSelector, SignalValue};
+use crate::{Element, Signal, SignalMap, SignalName, SignalValue};
 
 #[derive(Signal)]
 pub enum TestSignals {
@@ -239,24 +239,24 @@ fn selector_as_ref_str() {
 
 #[test]
 fn wrap_and_extract() {
-    let signal = UserName::wrap("hello".to_string());
+    let signal = UserName::from_value("hello".to_string());
     assert!(matches!(&signal, TestSignals::UserName(s) if s == "hello"));
 
-    let extracted = UserName::extract(&signal);
+    let extracted = UserName::value(&signal);
     assert_eq!(extracted, Some(&"hello".to_string()));
 
-    let wrong_signal = PageNumber::wrap(42);
-    assert_eq!(UserName::extract(&wrong_signal), None);
+    let wrong_signal = PageNumber::from_value(42);
+    assert_eq!(UserName::value(&wrong_signal), None);
 }
 
 #[test]
 fn into_inner() {
-    let signal = SearchTerm::wrap(Some("query".to_string()));
-    let inner = SearchTerm::into_inner(signal);
+    let signal = SearchTerm::from_value(Some("query".to_string()));
+    let inner = SearchTerm::owned(signal);
     assert_eq!(inner, Some(Some("query".to_string())));
 
-    let wrong_signal = UserName::wrap("test".to_string());
-    let inner = SearchTerm::into_inner(wrong_signal);
+    let wrong_signal = UserName::from_value("test".to_string());
+    let inner = SearchTerm::owned(wrong_signal);
     assert_eq!(inner, None);
 }
 
@@ -265,13 +265,13 @@ fn signal_enum_signal_name() {
     use crate::SignalEnum;
 
     let signal = TestSignals::UserName("test".to_string());
-    assert_eq!(signal.signal_name(), "userName");
+    assert_eq!(signal.name(), "userName");
 
     let signal = TestSignals::SearchTerm(None);
-    assert_eq!(signal.signal_name(), "searchTerm");
+    assert_eq!(signal.name(), "searchTerm");
 
     let signal = TestSignals::PageNumber(1);
-    assert_eq!(signal.signal_name(), "pageNum");
+    assert_eq!(signal.name(), "pageNum");
 }
 
 #[test]
@@ -279,16 +279,16 @@ fn signal_enum_to_json_value() {
     use crate::SignalEnum;
 
     let signal = TestSignals::UserName("test".to_string());
-    assert_eq!(signal.to_json_value(), serde_json::json!("test"));
+    assert_eq!(signal.json(), serde_json::json!("test"));
 
     let signal = TestSignals::SearchTerm(Some("query".to_string()));
-    assert_eq!(signal.to_json_value(), serde_json::json!("query"));
+    assert_eq!(signal.json(), serde_json::json!("query"));
 
     let signal = TestSignals::SearchTerm(None);
-    assert_eq!(signal.to_json_value(), serde_json::Value::Null);
+    assert_eq!(signal.json(), serde_json::Value::Null);
 
     let signal = TestSignals::PageNumber(42);
-    assert_eq!(signal.to_json_value(), serde_json::json!(42));
+    assert_eq!(signal.json(), serde_json::json!(42));
 }
 
 #[test]
@@ -338,8 +338,8 @@ fn merge_signals() {
         TestSignals::PageNumber(3),
     ];
 
-    let merged = crate::signal::merge_signals(&signals);
+    let map = SignalMap::merge(&signals);
 
-    assert_eq!(merged["userName"], serde_json::json!("john"));
-    assert_eq!(merged["pageNum"], serde_json::json!(3));
+    assert_eq!(map.values["userName"], serde_json::json!("john"));
+    assert_eq!(map.values["pageNum"], serde_json::json!(3));
 }

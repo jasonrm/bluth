@@ -325,7 +325,7 @@ Return elements as patch responses for live updates:
 
 ```rust
 pub async fn update_results(
-    SignalExtractor(search_term): SignalExtractor<SearchTerm>,
+    Signal(search_term): Signal<SearchTerm>,
 ) -> Result<impl IntoResponse, AppError> {
     let content = SearchResults {
         results: search_term,
@@ -410,7 +410,7 @@ impl SearchBar {
             input: (),
             loading: (),
             results: SearchResults {
-                results: query.into_inner(),
+                results: query.0,
             },
         }
     }

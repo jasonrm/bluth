@@ -1,5 +1,6 @@
-use axum::response::Response;
-use bluth::Element;
+use crate::assets::Asset;
+use crate::layout::HtmlResponse;
+use bluth::{Body, Document, Element, Head, Html, Link, Script};
 
 #[derive(Element)]
 #[element("main")]
@@ -119,30 +120,33 @@ struct Code {
     text: &'static str,
 }
 
-pub async fn home() -> Response {
-    let page = HomePage {
-        header: Header {
-            title: Title { text: "bluth" },
-            subtitle: Subtitle {
-                text: "Type-safe HTML components for Rust",
+pub struct Home;
+
+impl HomePage {
+    pub fn new() -> Self {
+        Self {
+            header: Header {
+                title: Title { text: "bluth" },
+                subtitle: Subtitle {
+                    text: "Type-safe HTML components for Rust",
+                },
             },
-        },
-        ticker: TickerSection {
-            heading: TickerHeading { text: "SSE Demo" },
-            ticker: TickerDisplay { text: "" },
-        },
-        intro: Intro {
-            text: IntroText {
-                text: "bluth is a Rust library for building HTML with compile-time safe, composable components. Define your markup as structs, derive Element, and get type-checked HTML rendering with zero runtime overhead.",
+            ticker: TickerSection {
+                heading: TickerHeading { text: "SSE Demo" },
+                ticker: TickerDisplay { text: "" },
             },
-        },
-        example: Example {
-            heading: ExampleHeading {
-                text: "Quick Start",
+            intro: Intro {
+                text: IntroText {
+                    text: "bluth is a Rust library for building HTML with compile-time safe, composable components. Define your markup as structs, derive Element, and get type-checked HTML rendering with zero runtime overhead.",
+                },
             },
-            code: CodeBlock {
-                code: Code {
-                    text: r#"use bluth::Element;
+            example: Example {
+                heading: ExampleHeading {
+                    text: "Quick Start",
+                },
+                code: CodeBlock {
+                    code: Code {
+                        text: r#"use bluth::Element;
 
 #[derive(Element)]
 #[element("div")]
@@ -154,10 +158,36 @@ struct Hello {
 
 let hello = Hello { who: "world".into() };
 // renders: <div class="greeting"><span>world</span></div>"#,
+                    },
                 },
             },
-        },
-    };
+        }
+    }
 
-    crate::layout::page(page)
+    pub fn document(self, datastar: Asset, styles: Asset) -> Document<Self> {
+        Document::new(Html {
+            lang: "en",
+            head: Head {
+                link: vec![Link {
+                    id: Some("stylesheet"),
+                    href: styles.url,
+                }],
+                script: vec![Script {
+                    src: datastar.url,
+                    async_: false,
+                    type_: "module",
+                }],
+            },
+            body: Body {
+                class: "bg-gray-950 text-gray-100 min-h-screen",
+                children: vec![self],
+            },
+        })
+    }
+}
+
+impl Home {
+    pub async fn get() -> impl axum::response::IntoResponse {
+        HtmlResponse(HomePage::new().document(Asset::datastar(), Asset::styles()))
+    }
 }

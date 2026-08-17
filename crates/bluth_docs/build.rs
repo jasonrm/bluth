@@ -2,7 +2,7 @@ use minifier::css::minify;
 use std::collections::hash_map::DefaultHasher;
 use std::fs;
 use std::hash::{Hash, Hasher};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 enum AssetSource {
@@ -17,6 +17,77 @@ struct File {
     ext: String,
 }
 
+struct Directory {
+    path: PathBuf,
+}
+
+impl Directory {
+    fn rust_files(&self) -> Vec<PathBuf> {
+        let mut files = Vec::new();
+        let entries = match fs::read_dir(&self.path) {
+            Ok(entries) => entries,
+            Err(_) => return files,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                files.extend(Directory { path }.rust_files());
+            } else if path.extension().and_then(|s| s.to_str()) == Some("rs") {
+                println!("cargo:rerun-if-changed={}", path.display());
+                files.push(path);
+            }
+        }
+        files
+    }
+}
+
+struct Digest(u64);
+
+impl Digest {
+    fn of(content: &[u8]) -> Self {
+        let mut hasher = DefaultHasher::new();
+        content.hash(&mut hasher);
+        Self(hasher.finish())
+    }
+
+    fn hex6(&self) -> String {
+        format!("{:x}", self.0 % 0x1000000)
+    }
+}
+
+struct Download {
+    url: String,
+}
+
+impl Download {
+    fn bytes(&self) -> Vec<u8> {
+        reqwest::blocking::get(&self.url)
+            .expect("Failed to download")
+            .bytes()
+            .expect("Failed to get bytes")
+            .to_vec()
+    }
+}
+
+impl File {
+    fn bytes(&self) -> Vec<u8> {
+        match &self.source {
+            AssetSource::Url(url) => Download { url: url.clone() }.bytes(),
+            AssetSource::Bytes(bytes) => bytes.clone(),
+        }
+    }
+
+    fn write(&self, dir: &Path, content: &[u8]) -> (String, String, String) {
+        let digest = Digest::of(content);
+        let hex6 = digest.hex6();
+        let filename = format!("{}.{}", self.name, self.ext);
+        let url_filename = format!("{}.{}.{}", self.name, hex6, self.ext);
+        let path = dir.join(&filename);
+        fs::write(&path, content).expect("Failed to write asset file");
+        (filename, url_filename, hex6)
+    }
+}
+
 fn main() {
     println!("cargo:rerun-if-changed=src/");
 
@@ -24,32 +95,32 @@ fn main() {
     let assets_dir = Path::new(&out_dir).join("assets");
     fs::create_dir_all(&assets_dir).expect("Failed to create assets directory");
 
-    // Collect all Rust source files
-    let source_files = collect_rust_files("src");
+    let src = Directory {
+        path: PathBuf::from("src"),
+    };
+    let files = src.rust_files();
 
-    // Read the content of all source files
-    let source_contents: Vec<String> = source_files
+    let contents: Vec<String> = files
         .iter()
-        .filter_map(|path| fs::read_to_string(path).ok())
+        .map(|path| fs::read_to_string(path).expect("Failed to read source file"))
         .collect();
 
-    // Generate CSS from all source files
     let css = encre_css::generate(
-        source_contents.iter().map(|s| s.as_str()),
+        contents.iter().map(|s| s.as_str()),
         &encre_css::Config::default(),
     );
 
-    let minified_css = minify(&css).expect("minification failed").to_string();
+    let css = minify(&css).expect("minification failed").to_string();
 
     let css_file = File {
         name: "styles".to_string(),
-        source: AssetSource::Bytes(minified_css.as_bytes().to_vec()),
+        source: AssetSource::Bytes(css.as_bytes().to_vec()),
         ext: "css".to_string(),
     };
 
     println!(
         "cargo:warning=Scanned {} source files for CSS classes",
-        source_files.len()
+        files.len()
     );
 
     let mut files = vec![File {
@@ -65,30 +136,20 @@ fn main() {
     let mut asset_paths = Vec::new();
 
     for file in &files {
-        let content = match &file.source {
-            AssetSource::Url(url) => download(url),
-            AssetSource::Bytes(bytes) => bytes.clone(),
-        };
-        let hash = calculate_hash(&content);
-        let hash_short = format!("{:x}", hash % 0x1000000);
-        let filename = format!("{}.{}", file.name, file.ext);
-        let url_filename = format!("{}.{}.{}", file.name, hash_short, file.ext);
-        let path = assets_dir.join(&filename);
-
-        fs::write(&path, &content).expect("Failed to write asset file");
+        let content = file.bytes();
+        let (filename, url_filename, hex6) = file.write(&assets_dir, &content);
         let action = match &file.source {
             AssetSource::Url(_) => "Downloaded and saved asset",
             AssetSource::Bytes(_) => "Generated asset",
         };
         println!("cargo:warning={} {}", action, filename);
 
-        asset_paths.push((file.name.clone(), filename, url_filename, hash_short));
+        asset_paths.push((file.name.clone(), filename, url_filename, hex6));
     }
 
-    // Generate generated.rs with constants for asset content
     let assets_content = asset_paths
         .into_iter()
-        .map(|(name, filename, url_filename, hash_short)| {
+        .map(|(name, filename, url_filename, hex6)| {
             format!(
                 "pub const {}: &[u8] = include_bytes!(concat!(env!(\"OUT_DIR\"), \"/assets/{}\"));\npub const {}_URL: &str = \"/assets/{}\";\npub const {}_ETAG: &str = \"{}\";",
                 name.to_uppercase(),
@@ -96,7 +157,7 @@ fn main() {
                 name.to_uppercase(),
                 url_filename,
                 name.to_uppercase(),
-                hash_short
+                hex6
             )
         })
         .collect::<Vec<_>>()
@@ -104,41 +165,4 @@ fn main() {
 
     let assets_file_path = assets_dir.join("generated.rs");
     fs::write(&assets_file_path, assets_content).expect("Failed to write generated.rs");
-}
-
-fn calculate_hash(content: &[u8]) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    content.hash(&mut hasher);
-    hasher.finish()
-}
-
-fn collect_rust_files(dir: &str) -> Vec<String> {
-    let mut rust_files = Vec::new();
-
-    if let Ok(entries) = fs::read_dir(dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-
-            if path.is_dir() {
-                if let Some(path_str) = path.to_str() {
-                    rust_files.extend(collect_rust_files(path_str));
-                }
-            } else if path.extension().and_then(|s| s.to_str()) == Some("rs") {
-                if let Some(path_str) = path.to_str() {
-                    rust_files.push(path_str.to_string());
-                    println!("cargo:rerun-if-changed={}", path_str);
-                }
-            }
-        }
-    }
-
-    rust_files
-}
-
-fn download(url: &str) -> Vec<u8> {
-    reqwest::blocking::get(url)
-        .expect("Failed to download")
-        .bytes()
-        .expect("Failed to get bytes")
-        .to_vec()
 }

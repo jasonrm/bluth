@@ -133,7 +133,7 @@ async fn main() {
 - `#[derive(Signal)]` — Type-safe reactive signals
 - `#[attr(...)]` — HTML attributes with interpolation
 - `#[element("tag")]` — Wrap fields in HTML tags
-- Axum extractors: `Signal<T>`, `Signals<(A, B)>`
+- Axum extractors: `Signal<T>`, `SignalMap`
 - SSE responses: `PatchElements`, `PatchSignals`
 
 ## License
