@@ -220,7 +220,7 @@ fn generate_signal_enum(
         .map(|v| {
             let variant_name = &v.variant_name;
             quote! {
-                Self::#variant_name(v) => ::serde_json::to_value(v).unwrap_or(::serde_json::Value::Null),
+                Self::#variant_name(v) => ::serde_json::to_value(v).map_err(|e| #bluth::Error::Serialize(e.to_string())),
             }
         })
         .collect();
@@ -244,7 +244,7 @@ fn generate_signal_enum(
                 }
             }
 
-            fn json(&self) -> ::serde_json::Value {
+            fn json(&self) -> ::core::result::Result<::serde_json::Value, #bluth::Error> {
                 match self {
                     #(#to_json_arms)*
                 }

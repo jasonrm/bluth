@@ -33,12 +33,14 @@ mod tests;
 use std::fmt::Display;
 
 pub mod datastar;
+pub mod error;
 pub mod html;
 pub mod signal;
 
 #[cfg(feature = "axum")]
 pub mod request;
 
+pub use error::Error;
 pub use signal::{OptionalDisplay, SignalEnum, SignalMap, SignalName, SignalValue};
 
 #[cfg(feature = "axum")]

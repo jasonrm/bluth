@@ -126,7 +126,7 @@ impl<T: SignalEnum> Display for PatchSignals<T> {
             writeln!(f, "data: onlyIfMissing {}", self.only_if_missing)?;
         }
 
-        let map = crate::signal::SignalMap::merge(&self.signals);
+        let map = crate::signal::SignalMap::merge(&self.signals).expect("signal serialize");
         writeln!(f, "data: signals {}", map)?;
 
         writeln!(f)?;

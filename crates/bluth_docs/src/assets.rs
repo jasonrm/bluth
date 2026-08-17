@@ -56,8 +56,8 @@ impl Asset {
             .and_then(|value| value.to_str().ok())
             == Some(self.etag);
 
-        if not_modified {
-            return (
+        let response = if not_modified {
+            (
                 StatusCode::NOT_MODIFIED,
                 [
                     (header::ETAG, self.etag),
@@ -65,19 +65,20 @@ impl Asset {
                 ],
                 "",
             )
-                .into_response();
-        }
-
-        (
-            StatusCode::OK,
-            [
-                (header::CONTENT_TYPE, self.content_type),
-                (header::ETAG, self.etag),
-                (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
-            ],
-            self.bytes,
-        )
-            .into_response()
+                .into_response()
+        } else {
+            (
+                StatusCode::OK,
+                [
+                    (header::CONTENT_TYPE, self.content_type),
+                    (header::ETAG, self.etag),
+                    (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+                ],
+                self.bytes,
+            )
+                .into_response()
+        };
+        response
     }
 
     pub async fn get(
@@ -87,9 +88,10 @@ impl Asset {
         use axum::http::StatusCode;
         use axum::response::IntoResponse;
 
-        match Self::from_path(&name) {
+        let response = match Self::from_path(&name) {
             Some(asset) => asset.response(&headers),
             None => (StatusCode::NOT_FOUND, "not found").into_response(),
-        }
+        };
+        response
     }
 }

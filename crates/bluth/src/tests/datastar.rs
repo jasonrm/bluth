@@ -279,16 +279,16 @@ fn signal_enum_to_json_value() {
     use crate::SignalEnum;
 
     let signal = TestSignals::UserName("test".to_string());
-    assert_eq!(signal.json(), serde_json::json!("test"));
+    assert_eq!(signal.json().expect("json"), serde_json::json!("test"));
 
     let signal = TestSignals::SearchTerm(Some("query".to_string()));
-    assert_eq!(signal.json(), serde_json::json!("query"));
+    assert_eq!(signal.json().expect("json"), serde_json::json!("query"));
 
     let signal = TestSignals::SearchTerm(None);
-    assert_eq!(signal.json(), serde_json::Value::Null);
+    assert_eq!(signal.json().expect("json"), serde_json::Value::Null);
 
     let signal = TestSignals::PageNumber(42);
-    assert_eq!(signal.json(), serde_json::json!(42));
+    assert_eq!(signal.json().expect("json"), serde_json::json!(42));
 }
 
 #[test]
@@ -338,7 +338,7 @@ fn merge_signals() {
         TestSignals::PageNumber(3),
     ];
 
-    let map = SignalMap::merge(&signals);
+    let map = SignalMap::merge(&signals).expect("merge");
 
     assert_eq!(map.values["userName"], serde_json::json!("john"));
     assert_eq!(map.values["pageNum"], serde_json::json!(3));

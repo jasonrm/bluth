@@ -1,6 +1,6 @@
 pub trait SignalEnum: Sized + serde::Serialize {
     fn name(&self) -> &'static str;
-    fn json(&self) -> serde_json::Value;
+    fn json(&self) -> Result<serde_json::Value, crate::Error>;
 }
 
 pub trait SignalName: Sized {
@@ -82,17 +82,18 @@ where
 
 impl<S: SignalName> Eq for SignalValue<S> where S::Value: Eq {}
 
+#[derive(Debug)]
 pub struct SignalMap {
     pub values: serde_json::Map<String, serde_json::Value>,
 }
 
 impl SignalMap {
-    pub fn merge<T: SignalEnum>(signals: &[T]) -> Self {
+    pub fn merge<T: SignalEnum>(signals: &[T]) -> Result<Self, crate::Error> {
         let mut values = serde_json::Map::new();
         for signal in signals {
-            values.insert(signal.name().to_string(), signal.json());
+            values.insert(signal.name().to_string(), signal.json()?);
         }
-        Self { values }
+        Ok(Self { values })
     }
 }
 

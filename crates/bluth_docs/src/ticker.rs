@@ -1,6 +1,6 @@
 use axum::body::Body;
 use axum::http::{StatusCode, header};
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
 use bluth::Element;
 use bluth::datastar::{PatchElements, PatchMode};
 use bytes::Bytes;
@@ -47,11 +47,14 @@ impl Ticker {
         let body = StreamBody::new(stream);
         let body = Body::new(body);
 
-        Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, "text/event-stream")
-            .header(header::CACHE_CONTROL, "no-cache")
-            .body(body)
-            .unwrap()
+        (
+            StatusCode::OK,
+            [
+                (header::CONTENT_TYPE, "text/event-stream"),
+                (header::CACHE_CONTROL, "no-cache"),
+            ],
+            body,
+        )
+            .into_response()
     }
 }

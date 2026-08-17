@@ -1,4 +1,4 @@
-use crate::{Signal, SignalMap, SignalName};
+use crate::{Error, Signal, SignalMap, SignalName};
 use axum::{
     extract::FromRequest,
     http::{StatusCode, header},
@@ -106,7 +106,49 @@ async fn signal_extractor_missing_header() -> Result<(), anyhow::Error> {
     let result: Result<Signal<SearchTerm>, _> =
         Signal::<SearchTerm>::from_request(request, &()).await;
 
-    assert!(result.is_err());
+    let err = result.expect_err("header required");
+    assert!(matches!(err, Error::MissingDatastarHeader));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn signal_extractor_missing_query() -> Result<(), anyhow::Error> {
+    use axum::{body::Body, extract::Request, http::Method};
+
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/search")
+        .header("Datastar-Request", "true")
+        .body(Body::empty())?;
+
+    let result: Result<SignalMap, _> = SignalMap::from_request(request, &()).await;
+
+    let err = result.expect_err("datastar query required");
+    assert!(matches!(err, Error::MissingDatastarQuery));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn signal_extractor_invalid_json() -> Result<(), anyhow::Error> {
+    use axum::{
+        body::Body,
+        extract::Request,
+        http::{Method, header},
+    };
+
+    let request = Request::builder()
+        .method(Method::POST)
+        .uri("/search")
+        .header(header::CONTENT_TYPE, "application/json")
+        .header("Datastar-Request", "true")
+        .body(Body::from("not-json"))?;
+
+    let result: Result<SignalMap, _> = SignalMap::from_request(request, &()).await;
+
+    let err = result.expect_err("json required");
+    assert!(matches!(err, Error::Json(_)));
 
     Ok(())
 }
@@ -127,7 +169,8 @@ async fn signal_extractor_missing_signal() -> Result<(), anyhow::Error> {
     let result: Result<Signal<SearchTerm>, _> =
         Signal::<SearchTerm>::from_request(request, &()).await;
 
-    assert!(result.is_err());
+    let err = result.expect_err("signal required");
+    assert!(matches!(err, Error::MissingSignal("searchTerm")));
 
     Ok(())
 }

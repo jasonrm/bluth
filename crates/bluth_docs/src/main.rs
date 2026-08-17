@@ -1,20 +1,31 @@
 mod assets;
+mod error;
 mod layout;
 mod pages;
 mod ticker;
 
 use crate::assets::Asset;
+use crate::error::Error;
 use crate::pages::Home;
 use crate::ticker::Ticker;
 use axum::Router;
 use axum::routing::get;
 
-#[tokio::main]
-async fn main() -> Result<(), lambda_http::Error> {
+async fn run() -> Result<(), Error> {
     let app = Router::new()
         .route("/", get(Home::get))
         .route("/assets/{name}", get(Asset::get))
         .route("/ticker", get(Ticker::stream));
 
-    lambda_http::run_with_streaming_response(app).await
+    lambda_http::run_with_streaming_response(app)
+        .await
+        .map_err(Error::Lambda)
+}
+
+#[tokio::main]
+async fn main() -> Result<(), lambda_http::Error> {
+    match run().await {
+        Ok(()) => Ok(()),
+        Err(Error::Lambda(err)) => Err(err),
+    }
 }
