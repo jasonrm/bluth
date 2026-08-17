@@ -353,6 +353,15 @@ Ok(PatchSignals {
     ..PatchSignals::new(vec![s])
 })
 ```
+
+`OnInterval` is the `data-on-interval` attribute:
+
+```rust
+OnInterval {
+    duration: Duration::from_secs(1),
+    leading: true,
+    view_transition: false,
+}
 ```
 
 ## Complete Example
@@ -386,7 +395,7 @@ pub struct SearchBar {
         id = "search-input",
         data_bind = search_query,
         "data-on:input__debounce.300ms" = "@post('/api/search')",
-        type = "text",
+        "type" = "text",
         placeholder = "Search...",
         class = "input input-bordered"
     )]
