@@ -6,15 +6,13 @@ use axum::{
 };
 use bluth_macros::Element;
 
-#[derive(Signal)]
-pub enum TestSignals {
-    SearchTerm(String),
-    UserName(String),
-    UserEmail(String),
-}
-
 #[tokio::test]
 async fn signal_extractor_post_json() -> Result<(), anyhow::Error> {
+    #[derive(Signal)]
+    enum SearchSignals {
+        SearchTerm(String),
+    }
+
     use axum::{
         body::Body,
         extract::Request,
@@ -43,13 +41,18 @@ async fn signal_extractor_post_json() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn signal_extractor_get_query() -> Result<(), anyhow::Error> {
+    #[derive(Signal)]
+    enum SearchSignals {
+        SearchTerm(String),
+    }
+
     use axum::{body::Body, extract::Request, http::Method};
 
-    let query_string = "datastar=%7B%22searchTerm%22%3A%22test%20query%22%7D";
+    let query = "datastar=%7B%22searchTerm%22%3A%22test%20query%22%7D";
 
     let request = Request::builder()
         .method(Method::GET)
-        .uri(format!("/search?{}", query_string))
+        .uri(format!("/search?{}", query))
         .header("Datastar-Request", "true")
         .body(Body::empty())?;
 
@@ -65,6 +68,12 @@ async fn signal_extractor_get_query() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn signal_extractor_multiple_signals() -> Result<(), anyhow::Error> {
+    #[derive(Signal)]
+    enum RegisterSignals {
+        UserName(String),
+        UserEmail(String),
+    }
+
     use axum::{body::Body, extract::Request, http::Method};
 
     let json_body = r#"{"userName":"John Doe","userEmail":"john@example.com"}"#;
@@ -93,6 +102,11 @@ async fn signal_extractor_multiple_signals() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn signal_extractor_missing_header() -> Result<(), anyhow::Error> {
+    #[derive(Signal)]
+    enum SearchSignals {
+        SearchTerm(String),
+    }
+
     use axum::{body::Body, extract::Request, http::Method};
 
     let json_body = r#"{"searchTerm":"test"}"#;
@@ -155,6 +169,11 @@ async fn signal_extractor_invalid_json() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn signal_extractor_missing_signal() -> Result<(), anyhow::Error> {
+    #[derive(Signal)]
+    enum SearchSignals {
+        SearchTerm(String),
+    }
+
     use axum::{body::Body, extract::Request, http::Method};
 
     let json_body = r#"{"otherSignal":"value"}"#;

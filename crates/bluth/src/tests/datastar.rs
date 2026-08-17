@@ -1,15 +1,12 @@
-use crate::{Element, Signal, SignalMap, SignalName, SignalValue};
-
-#[derive(Signal)]
-pub enum TestSignals {
-    UserName(String),
-    SearchTerm(Option<String>),
-    #[signal(name = "pageNum")]
-    PageNumber(i32),
-}
+use crate::{Element, Signal, SignalEnum, SignalMap, SignalName, SignalValue};
 
 #[test]
 fn data_bind_with_signal_selector() {
+    #[derive(Signal)]
+    enum BindSignals {
+        UserName(String),
+    }
+
     #[derive(Element)]
     struct Hello {
         user_name: String,
@@ -38,6 +35,11 @@ fn data_bind_with_signal_selector() {
 
 #[test]
 fn data_bind_with_field_bound_signal() {
+    #[derive(Signal)]
+    enum SearchSignals {
+        SearchTerm(Option<String>),
+    }
+
     #[derive(Element)]
     struct SearchBar {
         search_term: SignalValue<SearchTerm>,
@@ -62,6 +64,12 @@ fn data_bind_with_field_bound_signal() {
 
 #[test]
 fn data_bind_with_field_bound_custom_signal_name() {
+    #[derive(Signal)]
+    enum PageSignals {
+        #[signal(name = "pageNum")]
+        PageNumber(i32),
+    }
+
     #[derive(Element)]
     struct PageNav {
         page_num: SignalValue<PageNumber>,
@@ -83,6 +91,12 @@ fn data_bind_with_field_bound_custom_signal_name() {
 
 #[test]
 fn data_bind_with_nested_element_signals() {
+    #[derive(Signal)]
+    enum NestedSignals {
+        UserName(String),
+        SearchTerm(Option<String>),
+    }
+
     #[derive(Element)]
     struct Inner {
         inner_signal: SignalValue<UserName>,
@@ -225,6 +239,14 @@ fn interpolated_value_with_special_chars() {
 
 #[test]
 fn selector_has_correct_name() {
+    #[derive(Signal)]
+    enum NameSignals {
+        UserName(String),
+        SearchTerm(Option<String>),
+        #[signal(name = "pageNum")]
+        PageNumber(i32),
+    }
+
     assert_eq!(UserName::NAME, "userName");
     assert_eq!(SearchTerm::NAME, "searchTerm");
     assert_eq!(PageNumber::NAME, "pageNum");
@@ -232,6 +254,14 @@ fn selector_has_correct_name() {
 
 #[test]
 fn selector_as_ref_str() {
+    #[derive(Signal)]
+    enum RefSignals {
+        UserName(String),
+        SearchTerm(Option<String>),
+        #[signal(name = "pageNum")]
+        PageNumber(i32),
+    }
+
     assert_eq!(UserName.as_ref(), "userName");
     assert_eq!(SearchTerm.as_ref(), "searchTerm");
     assert_eq!(PageNumber.as_ref(), "pageNum");
@@ -239,8 +269,15 @@ fn selector_as_ref_str() {
 
 #[test]
 fn wrap_and_extract() {
+    #[derive(Signal)]
+    enum WrapSignals {
+        UserName(String),
+        #[signal(name = "pageNum")]
+        PageNumber(i32),
+    }
+
     let signal = UserName::from_value("hello".to_string());
-    assert!(matches!(&signal, TestSignals::UserName(s) if s == "hello"));
+    assert!(matches!(&signal, WrapSignals::UserName(s) if s == "hello"));
 
     let extracted = UserName::value(&signal);
     assert_eq!(extracted, Some(&"hello".to_string()));
@@ -251,6 +288,12 @@ fn wrap_and_extract() {
 
 #[test]
 fn into_inner() {
+    #[derive(Signal)]
+    enum OwnedSignals {
+        UserName(String),
+        SearchTerm(Option<String>),
+    }
+
     let signal = SearchTerm::from_value(Some("query".to_string()));
     let inner = SearchTerm::owned(signal);
     assert_eq!(inner, Some(Some("query".to_string())));
@@ -262,56 +305,85 @@ fn into_inner() {
 
 #[test]
 fn signal_enum_signal_name() {
-    use crate::SignalEnum;
+    #[derive(Signal)]
+    enum NameSignals {
+        UserName(String),
+        SearchTerm(Option<String>),
+        #[signal(name = "pageNum")]
+        PageNumber(i32),
+    }
 
-    let signal = TestSignals::UserName("test".to_string());
+    let signal = NameSignals::UserName("test".to_string());
     assert_eq!(signal.name(), "userName");
 
-    let signal = TestSignals::SearchTerm(None);
+    let signal = NameSignals::SearchTerm(None);
     assert_eq!(signal.name(), "searchTerm");
 
-    let signal = TestSignals::PageNumber(1);
+    let signal = NameSignals::PageNumber(1);
     assert_eq!(signal.name(), "pageNum");
 }
 
 #[test]
 fn signal_enum_to_json_value() {
-    use crate::SignalEnum;
+    #[derive(Signal)]
+    enum JsonSignals {
+        UserName(String),
+        SearchTerm(Option<String>),
+        #[signal(name = "pageNum")]
+        PageNumber(i32),
+    }
 
-    let signal = TestSignals::UserName("test".to_string());
+    let signal = JsonSignals::UserName("test".to_string());
     assert_eq!(signal.json().expect("json"), serde_json::json!("test"));
 
-    let signal = TestSignals::SearchTerm(Some("query".to_string()));
+    let signal = JsonSignals::SearchTerm(Some("query".to_string()));
     assert_eq!(signal.json().expect("json"), serde_json::json!("query"));
 
-    let signal = TestSignals::SearchTerm(None);
+    let signal = JsonSignals::SearchTerm(None);
     assert_eq!(signal.json().expect("json"), serde_json::Value::Null);
 
-    let signal = TestSignals::PageNumber(42);
+    let signal = JsonSignals::PageNumber(42);
     assert_eq!(signal.json().expect("json"), serde_json::json!(42));
 }
 
 #[test]
 fn signal_enum_serialize() {
-    let signal = TestSignals::UserName("john".to_string());
+    #[derive(Signal)]
+    enum SerializeSignals {
+        UserName(String),
+        #[signal(name = "pageNum")]
+        PageNumber(i32),
+    }
+
+    let signal = SerializeSignals::UserName("john".to_string());
     let json = serde_json::to_string(&signal).unwrap();
     assert_eq!(json, r#"{"userName":"john"}"#);
 
-    let signal = TestSignals::PageNumber(5);
+    let signal = SerializeSignals::PageNumber(5);
     let json = serde_json::to_string(&signal).unwrap();
     assert_eq!(json, r#"{"pageNum":5}"#);
 }
 
 #[test]
 fn signal_enum_clone() {
-    let signal = TestSignals::UserName("test".to_string());
+    #[derive(Signal)]
+    enum CloneSignals {
+        UserName(String),
+    }
+
+    let signal = CloneSignals::UserName("test".to_string());
     let cloned = signal.clone();
-    assert!(matches!(cloned, TestSignals::UserName(s) if s == "test"));
+    assert!(matches!(cloned, CloneSignals::UserName(s) if s == "test"));
 }
 
 #[test]
 fn signal_enum_debug() {
-    let signal = TestSignals::UserName("test".to_string());
+    #[derive(Signal)]
+    enum DebugSignals {
+        UserName(String),
+    }
+
+    let signal = DebugSignals::UserName("test".to_string());
     let debug_str = format!("{:?}", signal);
     assert_eq!(debug_str, r#"UserName("test")"#);
 }
@@ -333,9 +405,16 @@ fn map_or_with_option() {
 
 #[test]
 fn merge_signals() {
+    #[derive(Signal)]
+    enum MergeSignals {
+        UserName(String),
+        #[signal(name = "pageNum")]
+        PageNumber(i32),
+    }
+
     let signals = vec![
-        TestSignals::UserName("john".to_string()),
-        TestSignals::PageNumber(3),
+        MergeSignals::UserName("john".to_string()),
+        MergeSignals::PageNumber(3),
     ];
 
     let map = SignalMap::merge(&signals).expect("merge");
