@@ -547,7 +547,7 @@ fn emit_single_attr(
 
     match &attr.value {
         AttrValue::Literal(v) => {
-            let escaped = escape_attr_str(v);
+            let escaped = escaped_literal(v);
             quote! {
                 write!(f, " {}=\"{}\"", #key_expr, #escaped)?;
             }
@@ -614,7 +614,7 @@ fn unescape_double_braces(value: &str) -> String {
     result
 }
 
-fn escape_attr_str(value: &str) -> String {
+fn escaped_literal(value: &str) -> String {
     let unescaped = unescape_double_braces(value);
     let mut result = String::with_capacity(unescaped.len());
     for ch in unescaped.chars() {
