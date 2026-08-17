@@ -335,6 +335,26 @@ pub async fn update_results(
 }
 ```
 
+Addressed inner patches use a struct update from `new`:
+
+```rust
+Ok(PatchElements {
+    selector: Some("#search-results".into()),
+    mode: PatchMode::Inner,
+    ..PatchElements::new(vec![content])
+})
+```
+
+Signals use the same shape:
+
+```rust
+Ok(PatchSignals {
+    only_if_missing: true,
+    ..PatchSignals::new(vec![s])
+})
+```
+```
+
 ## Complete Example
 
 ```rust

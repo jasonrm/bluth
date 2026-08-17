@@ -106,7 +106,12 @@ fn parse_variant(variant: &syn::Variant) -> syn::Result<VariantInfo> {
         ));
     }
 
-    let field_type = fields.unnamed.first().expect("checked len above").ty.clone();
+    let field_type = fields
+        .unnamed
+        .first()
+        .expect("checked len above")
+        .ty
+        .clone();
 
     let signal_name = variant
         .attrs

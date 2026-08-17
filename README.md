@@ -14,7 +14,8 @@ An (untested) todo app with three nested components and axum:
 
 ```rust
 use axum::{routing::get, Router};
-use bluth::{Element, Signal, Html, Body, Head, Document, PatchElements};
+use bluth::datastar::{PatchElements, PatchMode};
+use bluth::{Body, Document, Element, Head, Html, Signal};
 
 // Signals for reactive state
 #[derive(Signal)]
@@ -109,9 +110,9 @@ async fn add_todo(Signal(NewTodo(text)): Signal<NewTodo>) -> PatchElements<TodoL
         TodoItem { text, delete_btn: "×", id: 3 },
     ];
     PatchElements {
-        selector: "#todo-list".into(),
-        merge_mode: Some("prepend".into()),
-        content: TodoList { items },
+        selector: Some("#todo-list".into()),
+        mode: PatchMode::Prepend,
+        ..PatchElements::new(vec![TodoList { items }])
     }
 }
 

@@ -52,16 +52,14 @@ fn main() {
         source_files.len()
     );
 
-    let mut files = vec![
-        File {
-            name: "datastar".to_string(),
-            source: AssetSource::Url(
-                "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.7/bundles/datastar.js"
-                    .to_string(),
-            ),
-            ext: "js".to_string(),
-        },
-    ];
+    let mut files = vec![File {
+        name: "datastar".to_string(),
+        source: AssetSource::Url(
+            "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.7/bundles/datastar.js"
+                .to_string(),
+        ),
+        ext: "js".to_string(),
+    }];
     files.push(css_file);
 
     let mut asset_paths = Vec::new();

@@ -21,9 +21,11 @@ pub async fn sse_ticker() -> Response {
             }
             accumulated.push_str(word);
 
-            let patch = PatchElements::new(vec![accumulated.clone()])
-                .selector("#ticker-text")
-                .mode(PatchMode::Inner);
+            let patch = PatchElements {
+                selector: Some("#ticker-text".into()),
+                mode: PatchMode::Inner,
+                ..PatchElements::new(vec![accumulated.clone()])
+            };
 
             let event_data = patch.to_string();
             yield Ok::<_, Infallible>(Frame::data(Bytes::from(event_data)));

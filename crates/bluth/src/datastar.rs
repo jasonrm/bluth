@@ -29,9 +29,9 @@ pub enum PatchNamespace {
 
 pub struct PatchElements<T> {
     pub selector: Option<String>,
-    pub mode: Option<PatchMode>,
+    pub mode: PatchMode,
     pub namespace: Option<PatchNamespace>,
-    pub use_view_transition: Option<bool>,
+    pub view_transition: bool,
     pub elements: Vec<T>,
 }
 
@@ -42,31 +42,11 @@ where
     pub fn new(elements: Vec<T>) -> Self {
         Self {
             selector: None,
-            mode: None,
+            mode: PatchMode::Outer,
             namespace: None,
-            use_view_transition: None,
+            view_transition: false,
             elements,
         }
-    }
-
-    pub fn selector(mut self, selector: impl Into<String>) -> Self {
-        self.selector = Some(selector.into());
-        self
-    }
-
-    pub fn mode(mut self, mode: PatchMode) -> Self {
-        self.mode = Some(mode);
-        self
-    }
-
-    pub fn namespace(mut self, namespace: PatchNamespace) -> Self {
-        self.namespace = Some(namespace);
-        self
-    }
-
-    pub fn use_view_transition(mut self, value: bool) -> Self {
-        self.use_view_transition = Some(value);
-        self
     }
 }
 
@@ -81,16 +61,16 @@ where
             writeln!(f, "data: selector {}", selector)?;
         }
 
-        if let Some(mode) = self.mode {
-            writeln!(f, "data: mode {}", mode.as_ref())?;
+        if self.mode != PatchMode::Outer {
+            writeln!(f, "data: mode {}", self.mode.as_ref())?;
         }
 
         if let Some(namespace) = self.namespace {
             writeln!(f, "data: namespace {}", namespace.as_ref())?;
         }
 
-        if let Some(use_view_transition) = self.use_view_transition {
-            writeln!(f, "data: useViewTransition {}", use_view_transition)?;
+        if self.view_transition {
+            writeln!(f, "data: useViewTransition {}", self.view_transition)?;
         }
 
         for element in &self.elements {
@@ -121,21 +101,16 @@ where
 }
 
 pub struct PatchSignals<T: SignalEnum> {
-    pub only_if_missing: Option<bool>,
+    pub only_if_missing: bool,
     pub signals: Vec<T>,
 }
 
 impl<T: SignalEnum> PatchSignals<T> {
     pub fn new(signals: Vec<T>) -> Self {
         Self {
-            only_if_missing: None,
+            only_if_missing: false,
             signals,
         }
-    }
-
-    pub fn only_if_missing(mut self, value: bool) -> Self {
-        self.only_if_missing = Some(value);
-        self
     }
 }
 
@@ -143,8 +118,8 @@ impl<T: SignalEnum> Display for PatchSignals<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "event: datastar-patch-signals")?;
 
-        if let Some(only_if_missing) = self.only_if_missing {
-            writeln!(f, "data: onlyIfMissing {}", only_if_missing)?;
+        if self.only_if_missing {
+            writeln!(f, "data: onlyIfMissing {}", self.only_if_missing)?;
         }
 
         let merged = crate::signal::merge_signals(&self.signals);
@@ -169,9 +144,9 @@ impl<T: SignalEnum> IntoResponse for PatchSignals<T> {
 }
 
 pub struct DatastarInterval {
-    duration: Duration,
-    leading: bool,
-    view_transition: bool,
+    pub duration: Duration,
+    pub leading: bool,
+    pub view_transition: bool,
 }
 
 impl DatastarInterval {
@@ -181,16 +156,6 @@ impl DatastarInterval {
             leading: false,
             view_transition: false,
         }
-    }
-
-    pub fn leading(mut self) -> Self {
-        self.leading = true;
-        self
-    }
-
-    pub fn viewtransition(mut self) -> Self {
-        self.view_transition = true;
-        self
     }
 }
 
@@ -217,28 +182,100 @@ impl Display for DatastarInterval {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Signal;
+
+    #[test]
+    fn default_patch_elements_omits_mode_and_view_transition() {
+        let patch = PatchElements::new(vec!["<span>hi</span>"]);
+        let sse = patch.to_string();
+        assert!(sse.starts_with("event: datastar-patch-elements\n"));
+        assert!(sse.contains("data: elements <span>hi</span>\n"));
+        assert!(!sse.contains("data: mode"));
+        assert!(!sse.contains("data: useViewTransition"));
+        assert!(!sse.contains("data: selector"));
+    }
+
+    #[test]
+    fn inner_patch_elements_emits_selector_and_mode() {
+        let patch = PatchElements {
+            selector: Some("#ticker-text".into()),
+            mode: PatchMode::Inner,
+            ..PatchElements::new(vec!["Hello World"])
+        };
+        let sse = patch.to_string();
+        assert!(sse.contains("data: selector #ticker-text\n"));
+        assert!(sse.contains("data: mode inner\n"));
+        assert!(sse.contains("data: elements Hello World\n"));
+        assert!(!sse.contains("data: useViewTransition"));
+    }
+
+    #[test]
+    fn default_patch_signals_omits_only_if_missing() {
+        #[derive(Signal)]
+        enum CountSignals {
+            Count(i32),
+        }
+
+        let patch = PatchSignals::new(vec![CountSignals::Count(1)]);
+        let sse = patch.to_string();
+        assert!(sse.starts_with("event: datastar-patch-signals\n"));
+        assert!(sse.contains("data: signals {\"count\":1}\n"));
+        assert!(!sse.contains("data: onlyIfMissing"));
+    }
+
+    #[test]
+    fn patch_signals_emits_only_if_missing_when_set() {
+        #[derive(Signal)]
+        enum CountSignals {
+            Count(i32),
+        }
+
+        let patch = PatchSignals {
+            only_if_missing: true,
+            ..PatchSignals::new(vec![CountSignals::Count(1)])
+        };
+        let sse = patch.to_string();
+        assert!(sse.contains("data: onlyIfMissing true\n"));
+        assert!(sse.contains("data: signals {\"count\":1}\n"));
+    }
 
     #[test]
     fn test_datastar_interval_seconds() {
-        let interval = DatastarInterval::new(Duration::from_secs(1));
+        let interval = DatastarInterval {
+            duration: Duration::from_secs(1),
+            leading: false,
+            view_transition: false,
+        };
         assert_eq!(interval.to_string(), "data-on-interval__duration.1s");
     }
 
     #[test]
     fn test_datastar_interval_milliseconds() {
-        let interval = DatastarInterval::new(Duration::from_millis(500));
+        let interval = DatastarInterval {
+            duration: Duration::from_millis(500),
+            leading: false,
+            view_transition: false,
+        };
         assert_eq!(interval.to_string(), "data-on-interval__duration.500ms");
     }
 
     #[test]
     fn test_datastar_interval_minutes() {
-        let interval = DatastarInterval::new(Duration::from_secs(120));
+        let interval = DatastarInterval {
+            duration: Duration::from_secs(120),
+            leading: false,
+            view_transition: false,
+        };
         assert_eq!(interval.to_string(), "data-on-interval__duration.120s");
     }
 
     #[test]
     fn test_datastar_interval_with_leading() {
-        let interval = DatastarInterval::new(Duration::from_secs(1)).leading();
+        let interval = DatastarInterval {
+            duration: Duration::from_secs(1),
+            leading: true,
+            view_transition: false,
+        };
         assert_eq!(
             interval.to_string(),
             "data-on-interval__duration.1s.leading"
@@ -247,7 +284,11 @@ mod tests {
 
     #[test]
     fn test_datastar_interval_with_viewtransition() {
-        let interval = DatastarInterval::new(Duration::from_millis(500)).viewtransition();
+        let interval = DatastarInterval {
+            duration: Duration::from_millis(500),
+            leading: false,
+            view_transition: true,
+        };
         assert_eq!(
             interval.to_string(),
             "data-on-interval__duration.500ms__viewtransition"
@@ -256,9 +297,11 @@ mod tests {
 
     #[test]
     fn test_datastar_interval_with_all_modifiers() {
-        let interval = DatastarInterval::new(Duration::from_secs(2))
-            .leading()
-            .viewtransition();
+        let interval = DatastarInterval {
+            duration: Duration::from_secs(2),
+            leading: true,
+            view_transition: true,
+        };
         assert_eq!(
             interval.to_string(),
             "data-on-interval__duration.2s.leading__viewtransition"
@@ -267,7 +310,11 @@ mod tests {
 
     #[test]
     fn test_datastar_interval_mixed_units() {
-        let interval = DatastarInterval::new(Duration::from_millis(1500));
+        let interval = DatastarInterval {
+            duration: Duration::from_millis(1500),
+            leading: false,
+            view_transition: false,
+        };
         assert_eq!(interval.to_string(), "data-on-interval__duration.1500ms");
     }
 }

@@ -127,7 +127,7 @@ checksum = "843867be96c8daad0d758b57df9392b6d8d271134fce549de6ce169ff98a92af"
 
 [[package]]
 name = "bluth"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "anyhow",
  "axum",
@@ -141,7 +141,7 @@ dependencies = [
 
 [[package]]
 name = "bluth_docs"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "async-stream",
  "axum",
@@ -159,7 +159,7 @@ dependencies = [
 
 [[package]]
 name = "bluth_macros"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "heck",
  "proc-macro-crate",

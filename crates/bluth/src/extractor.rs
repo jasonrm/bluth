@@ -21,15 +21,17 @@ pub enum SignalRejection {
 impl IntoResponse for SignalRejection {
     fn into_response(self) -> Response {
         let (status, message) = match self {
-            SignalRejection::MissingDatastarHeader => {
-                (StatusCode::BAD_REQUEST, "Missing Datastar-Request header".to_owned())
-            }
+            SignalRejection::MissingDatastarHeader => (
+                StatusCode::BAD_REQUEST,
+                "Missing Datastar-Request header".to_owned(),
+            ),
             SignalRejection::InvalidJson(err) => {
                 (StatusCode::BAD_REQUEST, format!("Invalid JSON: {}", err))
             }
-            SignalRejection::MissingSignal(signal) => {
-                (StatusCode::BAD_REQUEST, format!("Missing signal: {}", signal))
-            }
+            SignalRejection::MissingSignal(signal) => (
+                StatusCode::BAD_REQUEST,
+                format!("Missing signal: {}", signal),
+            ),
         };
         (status, message).into_response()
     }
