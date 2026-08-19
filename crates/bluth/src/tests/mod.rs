@@ -9,6 +9,9 @@ pub mod basic;
 pub mod fragments;
 
 #[cfg(test)]
+pub mod head;
+
+#[cfg(test)]
 pub mod collections;
 
 #[cfg(test)]

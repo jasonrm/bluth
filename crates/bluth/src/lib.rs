@@ -103,10 +103,29 @@ where
 #[element("head")]
 pub struct Head {
     #[element]
+    pub meta: Vec<Meta>,
+
+    #[element("title")]
+    pub title: &'static str,
+
+    #[element]
     pub link: Vec<Link>,
 
     #[element]
     pub script: Vec<Script>,
+}
+
+#[derive(Element)]
+#[element("meta")]
+pub struct Meta {
+    #[attr]
+    pub charset: Option<&'static str>,
+
+    #[attr]
+    pub name: Option<&'static str>,
+
+    #[attr]
+    pub content: Option<&'static str>,
 }
 
 #[derive(Element)]

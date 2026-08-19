@@ -15,7 +15,7 @@ An (untested) todo app with three nested components and axum:
 ```rust
 use axum::{routing::get, Router};
 use bluth::datastar::{PatchElements, PatchMode};
-use bluth::{Body, Document, Element, Head, Html, Script, Signal};
+use bluth::{Body, Document, Element, Head, Html, Meta, Script, Signal};
 
 #[derive(Signal)]
 pub enum Signals {
@@ -79,6 +79,12 @@ async fn index() -> Document<TodoPage> {
     Document::new(Html {
         lang: "en",
         head: Head {
+            meta: vec![Meta {
+                charset: Some("utf-8"),
+                name: None,
+                content: None,
+            }],
+            title: "My Todos",
             link: vec![],
             script: vec![Script {
                 src: "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.2/bundles/datastar.js",

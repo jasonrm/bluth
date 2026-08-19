@@ -1,7 +1,7 @@
 use crate::assets::Asset;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use bluth::{Body, Document, Element, Head, Html, Link, Script};
+use bluth::{Body, Document, Element, Head, Html, Link, Meta, Script};
 use std::fmt::Display;
 
 #[derive(Element)]
@@ -42,6 +42,19 @@ pub fn document<T: Display>(content: T, datastar: Asset, styles: Asset) -> Docum
     Document::new(Html {
         lang: "en",
         head: Head {
+            meta: vec![
+                Meta {
+                    charset: Some("utf-8"),
+                    name: None,
+                    content: None,
+                },
+                Meta {
+                    charset: None,
+                    name: Some("viewport"),
+                    content: Some("width=device-width,initial-scale=1"),
+                },
+            ],
+            title: "bluth",
             link: vec![Link {
                 id: Some("stylesheet"),
                 href: styles.url,
