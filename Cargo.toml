@@ -3,7 +3,7 @@ members = ["crates/bluth", "crates/bluth_macros", "crates/bluth_docs"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.6"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/jasonrm/bluth"
